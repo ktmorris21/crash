@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="favicon.ico">
+  <title>Crash Reconstruction Scaffold</title>
+  <style>
+    :root {
+      --bg: #111827;
+      --panel: #1f2937;
+      --panel-2: #111827;
+      --border: #374151;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+      --danger: #f87171;
+      --canvas-bg: #0b1220;
+      --green: #34d399;
+      --yellow: #facc15;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 390px;
+      grid-template-rows: 1fr 210px;
+      height: 100vh;
+    }
+
+    .toolbar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: calc(100% - 24px);
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(31, 41, 55, 0.92);
+      backdrop-filter: blur(6px);
+    }
+
+    button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: var(--text);
+      background: #253044;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button:hover { border-color: var(--accent); }
+    button.danger:hover { border-color: var(--danger); }
+
+    .canvas-wrap {
+      position: relative;
+      grid-column: 1;
+      grid-row: 1;
+      min-width: 0;
+      min-height: 0;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--canvas-bg);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    .inspector {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      overflow: auto;
+      padding: 16px;
+      background: var(--panel);
+    }
+
+    .console {
+      grid-column: 1;
+      grid-row: 2;
+      overflow: auto;
+      padding: 12px 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.45;
+      background: #050912;
+    }
+
+    h2, h3, h4 {
+      margin: 0 0 12px;
+      font-weight: 650;
+    }
+
+    h3 { margin-top: 20px; }
+    h4 { margin-top: 16px; color: var(--muted); }
+
+    .muted { color: var(--muted); }
+
+    .field { margin-bottom: 12px; }
+
+    label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      color: var(--text);
+      background: var(--panel-2);
+    }
+
+    input[readonly] {
+      color: var(--muted);
+      background: #0b1220;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .hint, .card {
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .card {
+      border-style: solid;
+      background: rgba(17, 24, 39, 0.5);
+    }
+
+    .calc-card {
+      border-color: #275342;
+      background: rgba(16, 78, 56, 0.22);
+    }
+
+    .entity-list, .state-list, .event-list {
+      display: grid;
+      gap: 6px;
+      margin: 8px 0 12px;
+    }
+
+    .pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #172033;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .pill.active {
+      border-color: var(--accent);
+      background: #1e3a5f;
+    }
+
+    .pill small { color: var(--muted); }
+
+    .inline-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .log-entry { margin-bottom: 4px; }
+    .log-time { color: var(--muted); }
+    .log-warn { color: var(--danger); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="canvas-wrap">
+      <div class="toolbar">
+        <button id="addVehicleBtn">Add Vehicle</button>
+        <button id="addStateBtn">Add State</button>
+        <button id="addEventBtn">Add Event</button>
+        <button id="calculateBtn">Calculate Selected Event</button>
+        <button id="togglePathsBtn">Hide Paths</button>
+        <button id="duplicateStateBtn">Duplicate State</button>
+        <button id="deleteBtn" class="danger">Delete Selected</button>
+        <button id="resetViewBtn">Reset View</button>
+      </div>
+      <canvas id="scene"></canvas>
+    </section>
+
+    <aside class="inspector">
+      <h2>Inspector</h2>
+      <div id="inspectorContent"></div>
+      <div class="hint">
+        Model: vehicle identity → state snapshots → events/actions between states. Event-specific fields are supplied by the event type registry.
+      </div>
+      <div class="hint">
+        Controls: click a vehicle state to select, drag to move, Shift + drag selected state to rotate, wheel to zoom, middle/right drag to pan.
+      </div>
+    </aside>
+
+    <section class="console" id="console"></section>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+    const consoleEl = document.getElementById('console');
+    const inspectorContent = document.getElementById('inspectorContent');
+
+    const state = {
+      vehicles: [],
+      events: [],
+      selectedVehicleId: null,
+      selectedStateId: null,
+      selectedEventId: null,
+      nextVehicleNum: 1,
+      nextStateNum: 1,
+      nextEventNum: 1,
+      showPaths: true,
+      camera: { x: 0, y: 0, zoom: 1 },
+      interaction: {
+        mode: null,
+        pointerStart: null,
+        stateStart: null,
+        cameraStart: null
+      }
+    };
+
+    // ------------------------------------------------------------
+    // Event Type Registry
+    // ------------------------------------------------------------
+    // Add new event types here. The inspector automatically calls:
+    // - defaultInputs()
+    // - renderFields(event)
+    // - calculate(eventContext)
+    //
+    // This keeps the Inspector generic while letting each event type
+    // define its own fields and calculation placeholders.
+    const eventTypeRegistry = {
+      skidToStop: {
+        label: 'Skid to Stop',
+        defaultInputs() {
+          return {
+            dragFactor: 0.70,
+            gradePercent: 0,
+            brakingEfficiency: 1.00,
+            skidDistanceFt: null,
+            useStateDistance: true
+          };
+        },
+        renderFields(event) {
+          ensureEventInputs(event);
+          return `
+            <h4>Skid to Stop Inputs</h4>
+            <div class="card">Distance can come from the state-to-state geometry or be manually entered. Calculation here is only a placeholder hook.</div>
+            <div class="field">
+              <label>Use state-to-state distance</label>
+              <select data-target="event-input" data-prop="useStateDistance" data-type="boolean">
+                <option value="true" ${event.inputs.useStateDistance ? 'selected' : ''}>Yes</option>
+                <option value="false" ${!event.inputs.useStateDistance ? 'selected' : ''}>No, use manual distance</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Manual skid distance, ft</label>
+              <input type="number" step="0.1" data-target="event-input" data-prop="skidDistanceFt" value="${valueOrBlank(event.inputs.skidDistanceFt)}" />
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>Drag factor</label>
+                <input type="number" step="0.01" data-target="event-input" data-prop="dragFactor" value="${valueOrBlank(event.inputs.dragFactor)}" />
+              </div>
+              <div class="field">
+                <label>Grade, %</label>
+                <input type="number" step="0.1" data-target="event-input" data-prop="gradePercent" value="${valueOrBlank(event.inputs.gradePercent)}" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Braking efficiency</label>
+              <input type="number" step="0.01" data-target="event-input" data-prop="brakingEfficiency" value="${valueOrBlank(event.inputs.brakingEfficiency)}" />
+            </div>
+            ${renderCalculatedOutputs(event)}
+          `;
+        },
+        calculate({ event, from, to }) {
+          ensureEventInputs(event);
+          const geomDistanceFt = from && to ? distanceBetweenStates(from, to) : 0;
+          const distanceFt = event.inputs.useStateDistance
+            ? geomDistanceFt
+            : Number(event.inputs.skidDistanceFt || 0);
+
+          // Placeholder formula shell. Replace with your verified reconstruction logic.
+          // Common simple skid form is around V = sqrt(30 * d * f * efficiency), with grade handling varying by convention.
+          const effectiveDrag = Number(event.inputs.dragFactor || 0) * Number(event.inputs.brakingEfficiency || 1);
+          const gradeAsDrag = Number(event.inputs.gradePercent || 0) / 100;
+          const speedMph = Math.sqrt(Math.max(0, 30 * distanceFt * (effectiveDrag + gradeAsDrag)));
+
+          event.calculated = {
+            geometryDistanceFt: round(geomDistanceFt, 2),
+            distanceUsedFt: round(distanceFt, 2),
+            effectiveDrag: round(effectiveDrag, 3),
+            placeholderSpeedMph: round(speedMph, 1)
+          };
+          return event.calculated;
+        }
+      },
+
+      yaw: {
+        label: 'Yaw',
+        defaultInputs() {
+          return {
+            radiusFt: 150,
+            dragFactor: 0.75,
+            superelevationPercent: 0,
+            useMeasuredRadius: true
+          };
+        },
+        renderFields(event) {
+          ensureEventInputs(event);
+          return `
+            <h4>Yaw Inputs</h4>
+            <div class="card">Yaw events often need radius and side-friction/drag assumptions. Calculation here is only a placeholder hook.</div>
+            <div class="field">
+              <label>Use measured/manual radius</label>
+              <select data-target="event-input" data-prop="useMeasuredRadius" data-type="boolean">
+                <option value="true" ${event.inputs.useMeasuredRadius ? 'selected' : ''}>Yes</option>
+                <option value="false" ${!event.inputs.useMeasuredRadius ? 'selected' : ''}>No / TBD</option>
+              </select>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>Radius, ft</label>
+                <input type="number" step="0.1" data-target="event-input" data-prop="radiusFt" value="${valueOrBlank(event.inputs.radiusFt)}" />
+              </div>
+              <div class="field">
+                <label>Drag / side friction</label>
+                <input type="number" step="0.01" data-target="event-input" data-prop="dragFactor" value="${valueOrBlank(event.inputs.dragFactor)}" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Superelevation, %</label>
+              <input type="number" step="0.1" data-target="event-input" data-prop="superelevationPercent" value="${valueOrBlank(event.inputs.superelevationPercent)}" />
+            </div>
+            ${renderCalculatedOutputs(event)}
+          `;
+        },
+        calculate({ event }) {
+          ensureEventInputs(event);
+          const radiusFt = Number(event.inputs.radiusFt || 0);
+          const drag = Number(event.inputs.dragFactor || 0);
+          const superAsDrag = Number(event.inputs.superelevationPercent || 0) / 100;
+
+          // Placeholder formula shell. Replace with your verified reconstruction logic.
+          const speedMph = Math.sqrt(Math.max(0, 15 * radiusFt * (drag + superAsDrag)));
+
+          event.calculated = {
+            radiusFt: round(radiusFt, 2),
+            effectiveSideFriction: round(drag + superAsDrag, 3),
+            placeholderSpeedMph: round(speedMph, 1)
+          };
+          return event.calculated;
+        }
+      },
+
+      custom: {
+        label: 'Custom / Notes Only',
+        defaultInputs() {
+          return { customField: '' };
+        },
+        renderFields(event) {
+          ensureEventInputs(event);
+          return `
+            <h4>Custom Event Inputs</h4>
+            <div class="field">
+              <label>Custom field</label>
+              <input data-target="event-input" data-prop="customField" value="${escapeHtml(event.inputs.customField || '')}" />
+            </div>
+            ${renderCalculatedOutputs(event)}
+          `;
+        },
+        calculate({ event }) {
+          event.calculated = { message: 'No calculation defined for custom event.' };
+          return event.calculated;
+        }
+      }
+    };
+
+    class Vehicle {
+      constructor({ label = null, color = null } = {}) {
+        this.id = `veh-${state.nextVehicleNum}`;
+        this.label = label || `Vehicle ${state.nextVehicleNum}`;
+        this.color = color || vehicleColor(state.nextVehicleNum);
+        this.states = [];
+        state.nextVehicleNum++;
+      }
+    }
+
+    class VehicleState {
+      constructor(vehicle, {
+        x = 0,
+        y = 0,
+        length = 16,
+        width = 6,
+        headingDeg = 0,
+        speedMph = 0,
+        massLb = 4000,
+        stateLabel = null,
+        timeLabel = '',
+        notes = ''
+      } = {}) {
+        this.id = `state-${state.nextStateNum}`;
+        this.vehicleId = vehicle.id;
+        this.stateLabel = stateLabel || `Position ${vehicle.states.length + 1}`;
+        this.timeLabel = timeLabel;
+        this.x = x;
+        this.y = y;
+        this.length = length;
+        this.width = width;
+        this.headingDeg = headingDeg;
+        this.speedMph = speedMph;
+        this.massLb = massLb;
+        this.notes = notes;
+        state.nextStateNum++;
+      }
+    }
+
+    class EventLink {
+      constructor({ vehicleId, fromStateId, toStateId, eventType = 'skidToStop', label = null, notes = '' }) {
+        this.id = `event-${state.nextEventNum}`;
+        this.vehicleId = vehicleId;
+        this.fromStateId = fromStateId;
+        this.toStateId = toStateId;
+        this.eventType = eventType;
+        this.label = label || `Event ${state.nextEventNum}`;
+        this.inputs = getEventDefinition(eventType).defaultInputs();
+        this.calculated = {};
+        this.notes = notes;
+        state.nextEventNum++;
+      }
+    }
+
+    function getEventDefinition(eventType) {
+      return eventTypeRegistry[eventType] || eventTypeRegistry.custom;
+    }
+
+    function ensureEventInputs(event) {
+      const defaults = getEventDefinition(event.eventType).defaultInputs();
+      event.inputs = { ...defaults, ...(event.inputs || {}) };
+      event.calculated = event.calculated || {};
+    }
+
+    function vehicleColor(num) {
+      const colors = ['#60a5fa', '#34d399', '#f87171', '#facc15', '#c084fc', '#fb923c'];
+      return colors[(num - 1) % colors.length];
+    }
+
+    function log(message, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      div.className = `log-entry ${type === 'warn' ? 'log-warn' : ''}`;
+      div.innerHTML = `<span class="log-time">[${time}]</span> ${escapeHtml(message)}`;
+      consoleEl.appendChild(div);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? '').replace(/[&<>'"]/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[c]));
+    }
+
+    function valueOrBlank(value) {
+      return value === null || value === undefined ? '' : escapeHtml(value);
+    }
+
+    function round(value, digits = 2) {
+      const factor = 10 ** digits;
+      return Math.round(Number(value || 0) * factor) / factor;
+    }
+
+    function distanceBetweenStates(a, b) {
+      return Math.hypot(b.x - a.x, b.y - a.y);
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    function screenToWorld(sx, sy) {
+      const rect = canvas.getBoundingClientRect();
+      const cx = sx - rect.left;
+      const cy = sy - rect.top;
+      return {
+        x: (cx - rect.width / 2) / state.camera.zoom - state.camera.x,
+        y: (cy - rect.height / 2) / state.camera.zoom - state.camera.y
+      };
+    }
+
+    function worldToScreen(wx, wy) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (wx + state.camera.x) * state.camera.zoom + rect.width / 2,
+        y: (wy + state.camera.y) * state.camera.zoom + rect.height / 2
+      };
+    }
+
+    function draw() {
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      drawGrid(rect.width, rect.height);
+      if (state.showPaths) drawPaths();
+      for (const vehicle of state.vehicles) {
+        for (const vehicleState of vehicle.states) {
+          drawVehicleState(vehicle, vehicleState);
+        }
+      }
+      if (state.showPaths) drawEvents();
+    }
+
+    function drawGrid(width, height) {
+      const gridFt = 10;
+      const step = gridFt * state.camera.zoom;
+      if (step < 6) return;
+
+      const topLeft = screenToWorld(0, 0);
+      const bottomRight = screenToWorld(width, height);
+      const startX = Math.floor(topLeft.x / gridFt) * gridFt;
+      const endX = Math.ceil(bottomRight.x / gridFt) * gridFt;
+      const startY = Math.floor(topLeft.y / gridFt) * gridFt;
+      const endY = Math.ceil(bottomRight.y / gridFt) * gridFt;
+
+      ctx.save();
+      ctx.strokeStyle = '#1f2a3d';
+      ctx.lineWidth = 1;
+
+      for (let x = startX; x <= endX; x += gridFt) {
+        const a = worldToScreen(x, startY);
+        const b = worldToScreen(x, endY);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+
+      for (let y = startY; y <= endY; y += gridFt) {
+        const a = worldToScreen(startX, y);
+        const b = worldToScreen(endX, y);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawPaths() {
+      for (const vehicle of state.vehicles) {
+        const ordered = vehicle.states;
+        if (ordered.length < 2) continue;
+        ctx.save();
+        ctx.strokeStyle = vehicle.color;
+        ctx.globalAlpha = 0.38;
+        ctx.setLineDash([8, 7]);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ordered.forEach((s, i) => {
+          const p = worldToScreen(s.x, s.y);
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function drawEvents() {
+      for (const e of state.events) {
+        const from = findState(e.fromStateId);
+        const to = findState(e.toStateId);
+        const vehicle = findVehicle(e.vehicleId);
+        if (!from || !to || !vehicle) continue;
+
+        const a = worldToScreen(from.x, from.y);
+        const b = worldToScreen(to.x, to.y);
+        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        const selected = e.id === state.selectedEventId;
+        const eventDef = getEventDefinition(e.eventType);
+
+        ctx.save();
+        ctx.strokeStyle = selected ? '#facc15' : vehicle.color;
+        ctx.fillStyle = selected ? '#facc15' : vehicle.color;
+        ctx.lineWidth = selected ? 4 : 2;
+        ctx.globalAlpha = selected ? 1 : 0.9;
+        drawArrow(a.x, a.y, b.x, b.y);
+        ctx.font = '12px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(eventDef.label, mid.x, mid.y - 8);
+        ctx.restore();
+      }
+    }
+
+    function drawArrow(x1, y1, x2, y2) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const headLength = 10;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawVehicleState(vehicle, s) {
+      const center = worldToScreen(s.x, s.y);
+      const lengthPx = s.length * state.camera.zoom;
+      const widthPx = s.width * state.camera.zoom;
+      const angle = degToRad(s.headingDeg);
+      const selected = s.id === state.selectedStateId;
+
+      ctx.save();
+      ctx.translate(center.x, center.y);
+      ctx.rotate(angle);
+
+      ctx.fillStyle = selected ? '#1d4ed8' : '#334155';
+      ctx.strokeStyle = selected ? '#ffffff' : vehicle.color;
+      ctx.lineWidth = selected ? 3 : 2;
+      roundRect(ctx, -lengthPx / 2, -widthPx / 2, lengthPx, widthPx, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 2;
+      const axleInset = lengthPx * 0.25;
+      [-axleInset, axleInset].forEach(ax => {
+        ctx.beginPath();
+        ctx.moveTo(ax, -widthPx / 2 - 4);
+        ctx.lineTo(ax, widthPx / 2 + 4);
+        ctx.stroke();
+      });
+
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.moveTo(lengthPx / 2 - 4, 0);
+      ctx.lineTo(lengthPx / 2 - 18, -widthPx * 0.25);
+      ctx.lineTo(lengthPx / 2 - 18, widthPx * 0.25);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.rotate(-angle);
+      ctx.fillStyle = '#e5e7eb';
+      ctx.font = '12px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${vehicle.label} / ${s.stateLabel}`, 0, -widthPx / 2 - 14);
+      if (s.speedMph) ctx.fillText(`${s.speedMph} mph`, 0, widthPx / 2 + 22);
+
+      ctx.restore();
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      const radius = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+    }
+
+    function hitTestVehicleState(worldPoint) {
+      for (let vi = state.vehicles.length - 1; vi >= 0; vi--) {
+        const vehicle = state.vehicles[vi];
+        for (let si = vehicle.states.length - 1; si >= 0; si--) {
+          const s = vehicle.states[si];
+          const dx = worldPoint.x - s.x;
+          const dy = worldPoint.y - s.y;
+          const a = -degToRad(s.headingDeg);
+          const localX = dx * Math.cos(a) - dy * Math.sin(a);
+          const localY = dx * Math.sin(a) + dy * Math.cos(a);
+          if (Math.abs(localX) <= s.length / 2 && Math.abs(localY) <= s.width / 2) {
+            return { vehicle, vehicleState: s };
+          }
+        }
+      }
+      return null;
+    }
+
+    function findVehicle(vehicleId) {
+      return state.vehicles.find(v => v.id === vehicleId) || null;
+    }
+
+    function findState(stateId) {
+      for (const vehicle of state.vehicles) {
+        const match = vehicle.states.find(s => s.id === stateId);
+        if (match) return match;
+      }
+      return null;
+    }
+
+    function getSelectedState() { return findState(state.selectedStateId); }
+    function getSelectedVehicle() { return findVehicle(state.selectedVehicleId); }
+    function getSelectedEvent() { return state.events.find(e => e.id === state.selectedEventId) || null; }
+
+    function selectState(vehicleId, stateId) {
+      state.selectedVehicleId = vehicleId;
+      state.selectedStateId = stateId;
+      state.selectedEventId = null;
+      renderInspector();
+      draw();
+    }
+
+    function selectVehicleOnly(vehicleId) {
+      state.selectedVehicleId = vehicleId;
+      state.selectedStateId = null;
+      state.selectedEventId = null;
+      renderInspector();
+      draw();
+    }
+
+    function selectEvent(eventId) {
+      const e = state.events.find(x => x.id === eventId);
+      state.selectedEventId = eventId;
+      state.selectedVehicleId = e?.vehicleId || null;
+      state.selectedStateId = null;
+      renderInspector();
+      draw();
+    }
+
+    function clearSelection() {
+      state.selectedVehicleId = null;
+      state.selectedStateId = null;
+      state.selectedEventId = null;
+      renderInspector();
+      draw();
+    }
+
+    function renderInspector() {
+      const vehicle = getSelectedVehicle();
+      const vehicleState = getSelectedState();
+      const event = getSelectedEvent();
+
+      inspectorContent.innerHTML = `
+        ${renderVehicleNavigator()}
+        ${event ? renderEventInspector(event) : vehicleState ? renderStateInspector(vehicle, vehicleState) : vehicle ? renderVehicleInspector(vehicle) : '<div class="muted">Select a vehicle state, vehicle, or event.</div>'}
+      `;
+
+      wireNavigatorEvents();
+      wireInspectorInputs(vehicle, vehicleState, event);
+    }
+
+    function renderVehicleNavigator() {
+      const vehiclesHtml = state.vehicles.map(vehicle => `
+        <div class="pill ${vehicle.id === state.selectedVehicleId && !state.selectedStateId && !state.selectedEventId ? 'active' : ''}" data-select-vehicle="${vehicle.id}">
+          <span>${escapeHtml(vehicle.label)}</span>
+          <small>${vehicle.states.length} state${vehicle.states.length === 1 ? '' : 's'}</small>
+        </div>
+        <div class="state-list">
+          ${vehicle.states.map(s => `
+            <div class="pill ${s.id === state.selectedStateId ? 'active' : ''}" data-select-state="${vehicle.id}|${s.id}">
+              <span>${escapeHtml(s.stateLabel)}</span>
+              <small>${Number(s.speedMph || 0)} mph</small>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+
+      const eventsHtml = state.events.map(e => {
+        const def = getEventDefinition(e.eventType);
+        return `
+          <div class="pill ${e.id === state.selectedEventId ? 'active' : ''}" data-select-event="${e.id}">
+            <span>${escapeHtml(e.label)}</span>
+            <small>${escapeHtml(def.label)}</small>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <h3>Vehicles & States</h3>
+        <div class="entity-list">${vehiclesHtml || '<div class="muted">No vehicles yet.</div>'}</div>
+        <h3>Events</h3>
+        <div class="event-list">${eventsHtml || '<div class="muted">No events yet.</div>'}</div>
+      `;
+    }
+
+    function renderVehicleInspector(vehicle) {
+      return `
+        <h3>Vehicle Identity</h3>
+        <div class="field">
+          <label>Vehicle label</label>
+          <input data-target="vehicle" data-prop="label" value="${escapeHtml(vehicle.label)}" />
+        </div>
+        <div class="field">
+          <label>Color</label>
+          <input type="color" data-target="vehicle" data-prop="color" value="${vehicle.color}" />
+        </div>
+        <div class="inline-actions">
+          <button data-action="add-state-to-selected">Add State</button>
+        </div>
+        <div class="card">Vehicle-level data should be identity-level data. Snapshot values like speed, position, and heading belong to states.</div>
+      `;
+    }
+
+    function renderStateInspector(vehicle, s) {
+      return `
+        <h3>State Snapshot</h3>
+        <div class="card"><strong>${escapeHtml(vehicle.label)}</strong> remains the same vehicle. This panel edits only <strong>${escapeHtml(s.stateLabel)}</strong>.</div>
+        <div class="field">
+          <label>State label</label>
+          <input data-target="state" data-prop="stateLabel" value="${escapeHtml(s.stateLabel)}" />
+        </div>
+        <div class="field">
+          <label>Time / sequence label</label>
+          <input data-target="state" data-prop="timeLabel" placeholder="e.g. t0, impact, final rest" value="${escapeHtml(s.timeLabel)}" />
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>X position, ft</label>
+            <input type="number" step="0.1" data-target="state" data-prop="x" value="${s.x.toFixed(1)}" />
+          </div>
+          <div class="field">
+            <label>Y position, ft</label>
+            <input type="number" step="0.1" data-target="state" data-prop="y" value="${s.y.toFixed(1)}" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Length, ft</label>
+            <input type="number" step="0.1" data-target="state" data-prop="length" value="${s.length}" />
+          </div>
+          <div class="field">
+            <label>Width, ft</label>
+            <input type="number" step="0.1" data-target="state" data-prop="width" value="${s.width}" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Heading, deg</label>
+            <input type="number" step="1" data-target="state" data-prop="headingDeg" value="${s.headingDeg.toFixed(0)}" />
+          </div>
+          <div class="field">
+            <label>Speed, mph</label>
+            <input type="number" step="0.1" data-target="state" data-prop="speedMph" value="${s.speedMph}" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Mass / weight placeholder, lb</label>
+          <input type="number" step="1" data-target="state" data-prop="massLb" value="${s.massLb}" />
+        </div>
+        <div class="field">
+          <label>Notes</label>
+          <textarea rows="4" data-target="state" data-prop="notes">${escapeHtml(s.notes)}</textarea>
+        </div>
+        <div class="inline-actions">
+          <button data-action="duplicate-state">Duplicate State</button>
+          <button data-action="add-event-from-state">Add Event From This State</button>
+        </div>
+      `;
+    }
+
+    function renderEventInspector(event) {
+      ensureEventInputs(event);
+      const vehicle = findVehicle(event.vehicleId);
+      const eventDef = getEventDefinition(event.eventType);
+      return `
+        <h3>Event / Action</h3>
+        <div class="card">This is a generic event shell plus event-type-specific fields from the registry.</div>
+        <div class="field">
+          <label>Event label</label>
+          <input data-target="event" data-prop="label" value="${escapeHtml(event.label)}" />
+        </div>
+        <div class="field">
+          <label>Event type</label>
+          <select data-target="event" data-prop="eventType">
+            ${Object.entries(eventTypeRegistry).map(([key, def]) => `<option value="${key}" ${key === event.eventType ? 'selected' : ''}>${escapeHtml(def.label)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Vehicle</label>
+          <select data-target="event" data-prop="vehicleId">
+            ${state.vehicles.map(v => `<option value="${v.id}" ${v.id === event.vehicleId ? 'selected' : ''}>${escapeHtml(v.label)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>From state</label>
+            <select data-target="event" data-prop="fromStateId">
+              ${(vehicle?.states || []).map(s => `<option value="${s.id}" ${s.id === event.fromStateId ? 'selected' : ''}>${escapeHtml(s.stateLabel)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label>To state</label>
+            <select data-target="event" data-prop="toStateId">
+              ${(vehicle?.states || []).map(s => `<option value="${s.id}" ${s.id === event.toStateId ? 'selected' : ''}>${escapeHtml(s.stateLabel)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        ${renderEventGeometrySummary(event)}
+        ${eventDef.renderFields(event)}
+        <div class="field">
+          <label>Notes</label>
+          <textarea rows="4" data-target="event" data-prop="notes">${escapeHtml(event.notes)}</textarea>
+        </div>
+        <div class="inline-actions">
+          <button data-action="calculate-event">Calculate Event</button>
+          <button data-action="clear-event-calcs">Clear Calculations</button>
+        </div>
+      `;
+    }
+
+    function renderEventGeometrySummary(event) {
+      const from = findState(event.fromStateId);
+      const to = findState(event.toStateId);
+      const distance = from && to ? distanceBetweenStates(from, to) : 0;
+      const headingDelta = from && to ? normalizeAngle(to.headingDeg - from.headingDeg) : 0;
+      return `
+        <div class="card">
+          <strong>Geometry summary</strong><br />
+          State distance: ${round(distance, 2)} ft<br />
+          Heading change: ${round(headingDelta, 1)}°
+        </div>
+      `;
+    }
+
+    function renderCalculatedOutputs(event) {
+      const entries = Object.entries(event.calculated || {});
+      if (!entries.length) {
+        return '<div class="card calc-card"><strong>Calculated outputs</strong><br /><span class="muted">No calculations yet.</span></div>';
+      }
+      return `
+        <div class="card calc-card">
+          <strong>Calculated outputs</strong><br />
+          ${entries.map(([key, value]) => `${escapeHtml(key)}: ${escapeHtml(value)}`).join('<br />')}
+        </div>
+      `;
+    }
+
+    function wireNavigatorEvents() {
+      inspectorContent.querySelectorAll('[data-select-vehicle]').forEach(el => {
+        el.addEventListener('click', () => selectVehicleOnly(el.dataset.selectVehicle));
+      });
+      inspectorContent.querySelectorAll('[data-select-state]').forEach(el => {
+        el.addEventListener('click', () => {
+          const [vehicleId, stateId] = el.dataset.selectState.split('|');
+          selectState(vehicleId, stateId);
+        });
+      });
+      inspectorContent.querySelectorAll('[data-select-event]').forEach(el => {
+        el.addEventListener('click', () => selectEvent(el.dataset.selectEvent));
+      });
+      inspectorContent.querySelectorAll('[data-action]').forEach(el => {
+        el.addEventListener('click', () => {
+          if (el.dataset.action === 'add-state-to-selected') addStateToSelectedVehicle();
+          if (el.dataset.action === 'duplicate-state') duplicateSelectedState();
+          if (el.dataset.action === 'add-event-from-state') addEventFromSelectedState();
+          if (el.dataset.action === 'calculate-event') calculateSelectedEvent();
+          if (el.dataset.action === 'clear-event-calcs') clearSelectedEventCalculations();
+        });
+      });
+    }
+
+    function wireInspectorInputs(vehicle, vehicleState, event) {
+      inspectorContent.querySelectorAll('[data-target][data-prop]').forEach(input => {
+        input.addEventListener('input', ev => {
+          const target = ev.target.dataset.target;
+          const prop = ev.target.dataset.prop;
+          const value = parseInputValue(ev.target);
+
+          if (target === 'vehicle' && vehicle) vehicle[prop] = value;
+          if (target === 'state' && vehicleState) vehicleState[prop] = value;
+
+          if (target === 'event' && event) {
+            if (prop === 'eventType') {
+              event.eventType = value;
+              event.inputs = getEventDefinition(value).defaultInputs();
+              event.calculated = {};
+              renderInspector();
+              draw();
+              return;
+            }
+
+            event[prop] = value;
+
+            if (prop === 'vehicleId') {
+              const newVehicle = findVehicle(value);
+              event.fromStateId = newVehicle?.states[0]?.id || null;
+              event.toStateId = newVehicle?.states[1]?.id || newVehicle?.states[0]?.id || null;
+              event.calculated = {};
+              renderInspector();
+              draw();
+              return;
+            }
+          }
+
+          if (target === 'event-input' && event) {
+            ensureEventInputs(event);
+            event.inputs[prop] = value;
+            event.calculated = {};
+          }
+
+          draw();
+        });
+      });
+    }
+
+    function parseInputValue(input) {
+      if (input.dataset.type === 'boolean') return input.value === 'true';
+      if (input.type === 'number') return input.value === '' ? null : Number(input.value);
+      return input.value;
+    }
+
+    function addVehicle() {
+      const vehicle = new Vehicle();
+      state.vehicles.push(vehicle);
+      const s = addState(vehicle.id, { x: state.vehicles.length * 8 - 20, y: state.vehicles.length * 6 - 10 });
+      selectState(vehicle.id, s.id);
+      log(`Added ${vehicle.label} with initial state ${s.stateLabel}.`);
+      return vehicle;
+    }
+
+    function addState(vehicleId, options = {}) {
+      const vehicle = findVehicle(vehicleId);
+      if (!vehicle) return null;
+      const last = vehicle.states[vehicle.states.length - 1];
+      const base = last ? {
+        x: last.x + 16,
+        y: last.y,
+        length: last.length,
+        width: last.width,
+        headingDeg: last.headingDeg,
+        speedMph: last.speedMph,
+        massLb: last.massLb
+      } : {};
+      const s = new VehicleState(vehicle, { ...base, ...options });
+      vehicle.states.push(s);
+      return s;
+    }
+
+    function addStateToSelectedVehicle() {
+      const vehicle = getSelectedVehicle() || state.vehicles[0];
+      if (!vehicle) return log('Add a vehicle first.', 'warn');
+      const s = addState(vehicle.id);
+      selectState(vehicle.id, s.id);
+      log(`Added ${s.stateLabel} to ${vehicle.label}.`);
+    }
+
+    function duplicateSelectedState() {
+      const selected = getSelectedState();
+      const vehicle = getSelectedVehicle();
+      if (!selected || !vehicle) return log('No state selected to duplicate.', 'warn');
+      const copy = addState(vehicle.id, {
+        x: selected.x + 8,
+        y: selected.y + 8,
+        length: selected.length,
+        width: selected.width,
+        headingDeg: selected.headingDeg,
+        speedMph: selected.speedMph,
+        massLb: selected.massLb,
+        stateLabel: `${selected.stateLabel} copy`,
+        timeLabel: selected.timeLabel,
+        notes: selected.notes
+      });
+      selectState(vehicle.id, copy.id);
+      log(`Duplicated ${selected.stateLabel} for ${vehicle.label}.`);
+    }
+
+    function addEventFromSelectedState() {
+      const selected = getSelectedState();
+      const vehicle = getSelectedVehicle();
+      if (!selected || !vehicle) return log('Select a state first.', 'warn');
+      let target = vehicle.states[vehicle.states.indexOf(selected) + 1];
+      if (!target) target = addState(vehicle.id, { x: selected.x + 20, y: selected.y, speedMph: 0 });
+      const event = new EventLink({
+        vehicleId: vehicle.id,
+        fromStateId: selected.id,
+        toStateId: target.id,
+        eventType: 'skidToStop'
+      });
+      state.events.push(event);
+      selectEvent(event.id);
+      log(`Added ${event.label}: ${vehicle.label} ${selected.stateLabel} → ${target.stateLabel}.`);
+    }
+
+    function addEvent() {
+      const vehicle = getSelectedVehicle() || state.vehicles[0];
+      if (!vehicle || vehicle.states.length < 1) return log('Add a vehicle and state first.', 'warn');
+      const from = getSelectedState() || vehicle.states[0];
+      let to = vehicle.states[vehicle.states.indexOf(from) + 1];
+      if (!to) to = addState(vehicle.id, { x: from.x + 20, y: from.y, speedMph: 0 });
+      const event = new EventLink({ vehicleId: vehicle.id, fromStateId: from.id, toStateId: to.id, eventType: 'skidToStop' });
+      state.events.push(event);
+      selectEvent(event.id);
+      log(`Added ${event.label}.`);
+    }
+
+    function calculateSelectedEvent() {
+      const event = getSelectedEvent();
+      if (!event) return log('Select an event first.', 'warn');
+      const context = reconstruction.getEventContext(event.id);
+      const def = getEventDefinition(event.eventType);
+      const result = def.calculate(context);
+      renderInspector();
+      draw();
+      log(`Calculated ${event.label}: ${JSON.stringify(result)}`);
+    }
+
+    function clearSelectedEventCalculations() {
+      const event = getSelectedEvent();
+      if (!event) return log('Select an event first.', 'warn');
+      event.calculated = {};
+      renderInspector();
+      draw();
+      log(`Cleared calculations for ${event.label}.`);
+    }
+
+    function deleteSelected() {
+      const selectedEvent = getSelectedEvent();
+      if (selectedEvent) {
+        state.events = state.events.filter(e => e.id !== selectedEvent.id);
+        clearSelection();
+        log(`Deleted ${selectedEvent.label}.`);
+        return;
+      }
+
+      const selectedState = getSelectedState();
+      const vehicle = getSelectedVehicle();
+      if (selectedState && vehicle) {
+        vehicle.states = vehicle.states.filter(s => s.id !== selectedState.id);
+        state.events = state.events.filter(e => e.fromStateId !== selectedState.id && e.toStateId !== selectedState.id);
+        selectVehicleOnly(vehicle.id);
+        log(`Deleted ${selectedState.stateLabel}; removed linked events.`);
+        return;
+      }
+
+      if (vehicle) {
+        state.vehicles = state.vehicles.filter(v => v.id !== vehicle.id);
+        state.events = state.events.filter(e => e.vehicleId !== vehicle.id);
+        clearSelection();
+        log(`Deleted ${vehicle.label} and its states/events.`);
+        return;
+      }
+
+      log('Nothing selected to delete.', 'warn');
+    }
+
+    function resetView() {
+      state.camera = { x: 0, y: 0, zoom: 1 };
+      draw();
+      log('View reset.');
+    }
+
+    function normalizeAngle(deg) {
+      let a = deg % 360;
+      if (a > 180) a -= 360;
+      if (a < -180) a += 360;
+      return a;
+    }
+
+    function degToRad(deg) { return deg * Math.PI / 180; }
+    function radToDeg(rad) { return rad * 180 / Math.PI; }
+
+    canvas.addEventListener('pointerdown', event => {
+      canvas.setPointerCapture(event.pointerId);
+      const world = screenToWorld(event.clientX, event.clientY);
+      const hit = hitTestVehicleState(world);
+
+      if (event.button === 1 || event.button === 2) {
+        state.interaction = {
+          mode: 'pan',
+          pointerStart: { x: event.clientX, y: event.clientY },
+          cameraStart: { ...state.camera }
+        };
+        return;
+      }
+
+      if (hit) {
+        selectState(hit.vehicle.id, hit.vehicleState.id);
+        state.interaction = {
+          mode: event.shiftKey ? 'rotateState' : 'dragState',
+          pointerStart: world,
+          stateStart: { x: hit.vehicleState.x, y: hit.vehicleState.y, headingDeg: hit.vehicleState.headingDeg }
+        };
+      } else {
+        clearSelection();
+      }
+    });
+
+    canvas.addEventListener('pointermove', event => {
+      const interaction = state.interaction;
+      if (!interaction.mode) return;
+
+      if (interaction.mode === 'pan') {
+        const dx = (event.clientX - interaction.pointerStart.x) / state.camera.zoom;
+        const dy = (event.clientY - interaction.pointerStart.y) / state.camera.zoom;
+        state.camera.x = interaction.cameraStart.x + dx;
+        state.camera.y = interaction.cameraStart.y + dy;
+        draw();
+        return;
+      }
+
+      const s = getSelectedState();
+      if (!s) return;
+      const world = screenToWorld(event.clientX, event.clientY);
+
+      if (interaction.mode === 'dragState') {
+        s.x = interaction.stateStart.x + (world.x - interaction.pointerStart.x);
+        s.y = interaction.stateStart.y + (world.y - interaction.pointerStart.y);
+        renderInspector();
+        draw();
+      }
+
+      if (interaction.mode === 'rotateState') {
+        const angle = Math.atan2(world.y - s.y, world.x - s.x);
+        s.headingDeg = Math.round(radToDeg(angle));
+        renderInspector();
+        draw();
+      }
+    });
+
+    canvas.addEventListener('pointerup', () => {
+      if (state.interaction.mode === 'dragState' || state.interaction.mode === 'rotateState') {
+        const s = getSelectedState();
+        const v = getSelectedVehicle();
+        if (s && v) log(`Updated ${v.label} / ${s.stateLabel}: x=${s.x.toFixed(1)}, y=${s.y.toFixed(1)}, heading=${s.headingDeg.toFixed(0)}°.`);
+      }
+      state.interaction = { mode: null, pointerStart: null, stateStart: null, cameraStart: null };
+    });
+
+    canvas.addEventListener('contextmenu', event => event.preventDefault());
+
+    canvas.addEventListener('wheel', event => {
+      event.preventDefault();
+      const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
+      state.camera.zoom = Math.min(6, Math.max(0.15, state.camera.zoom * zoomFactor));
+      draw();
+    }, { passive: false });
+
+    document.getElementById('addVehicleBtn').addEventListener('click', addVehicle);
+    document.getElementById('addStateBtn').addEventListener('click', addStateToSelectedVehicle);
+    document.getElementById('addEventBtn').addEventListener('click', addEvent);
+    document.getElementById('calculateBtn').addEventListener('click', calculateSelectedEvent);
+    document.getElementById('duplicateStateBtn').addEventListener('click', duplicateSelectedState);
+    document.getElementById('deleteBtn').addEventListener('click', deleteSelected);
+    document.getElementById('resetViewBtn').addEventListener('click', resetView);
+    document.getElementById('togglePathsBtn').addEventListener('click', event => {
+      state.showPaths = !state.showPaths;
+      event.target.textContent = state.showPaths ? 'Hide Paths' : 'Show Paths';
+      draw();
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+
+    const reconstruction = {
+      getVehicleTimeline(vehicleId) {
+        const vehicle = findVehicle(vehicleId);
+        if (!vehicle) return [];
+        return vehicle.states.map(s => ({ ...s }));
+      },
+      getEventContext(eventId) {
+        const event = state.events.find(e => e.id === eventId);
+        if (!event) return null;
+        return {
+          event,
+          from: findState(event.fromStateId),
+          to: findState(event.toStateId),
+          vehicle: findVehicle(event.vehicleId)
+        };
+      },
+      calculateEvent(eventId) {
+        const context = this.getEventContext(eventId);
+        if (!context) return null;
+        return getEventDefinition(context.event.eventType).calculate(context);
+      },
+      exportScene() {
+        return JSON.stringify({
+          vehicles: state.vehicles,
+          events: state.events,
+          nextVehicleNum: state.nextVehicleNum,
+          nextStateNum: state.nextStateNum,
+          nextEventNum: state.nextEventNum
+        }, null, 2);
+      },
+      importScene(json) {
+        const data = JSON.parse(json);
+        state.vehicles = data.vehicles || [];
+        state.events = data.events || [];
+        state.nextVehicleNum = data.nextVehicleNum || 1;
+        state.nextStateNum = data.nextStateNum || 1;
+        state.nextEventNum = data.nextEventNum || 1;
+        clearSelection();
+        log('Scene imported.');
+      }
+    };
+
+    window.crashScene = {
+      state,
+      eventTypeRegistry,
+      reconstruction,
+      addVehicle,
+      addState,
+      addEvent,
+      calculateSelectedEvent,
+      draw
+    };
+
+    resizeCanvas();
+
+    // Demo setup.
+    const v1 = addVehicle();
+    v1.label = 'Vehicle 1';
+    v1.states[0].stateLabel = 'Position 1';
+    v1.states[0].speedMph = 45;
+    v1.states[0].headingDeg = 0;
+
+    const v1s2 = addState(v1.id, { x: 36, y: 0, headingDeg: 0, speedMph: 0, stateLabel: 'Position 2', timeLabel: 'final rest' });
+    state.events.push(new EventLink({ vehicleId: v1.id, fromStateId: v1.states[0].id, toStateId: v1s2.id, eventType: 'skidToStop', label: 'Skid Event' }));
+
+    selectEvent(state.events[0].id);
+    log('Crash reconstruction scaffold loaded with event-type registry.');
+    log('Try selecting Skid Event or Yaw Event; the inspector fields change by event type.');
+    log('Use window.crashScene in DevTools for experiments/export.');
+  </script>
+</body>
+</html>
