@@ -247,7 +247,7 @@
       nextStateNum: 1,
       nextEventNum: 1,
       showPaths: true,
-      camera: { x: 0, y: 0, zoom: 1 },
+      camera: { x: 0, y: 0, zoom: 8 },
       interaction: {
         mode: null,
         pointerStart: null,
@@ -852,11 +852,11 @@
         </div>
         <div class="row">
           <div class="field">
-            <label>X position, ft</label>
+            <label>X Position (ft)</label>
             <input type="number" step="0.1" data-target="state" data-prop="x" value="${s.x.toFixed(1)}" />
           </div>
           <div class="field">
-            <label>Y position, ft</label>
+            <label>Y Position (ft)</label>
             <input type="number" step="0.1" data-target="state" data-prop="y" value="${s.y.toFixed(1)}" />
           </div>
         </div>
@@ -881,7 +881,7 @@
           </div>
         </div>
         <div class="field">
-          <label>Mass / weight placeholder, lb</label>
+          <label>Weight (lb)</label>
           <input type="number" step="1" data-target="state" data-prop="massLb" value="${s.massLb}" />
         </div>
         <div class="field">
@@ -1181,7 +1181,7 @@
     }
 
     function resetView() {
-      state.camera = { x: 0, y: 0, zoom: 1 };
+      state.camera = { x: 0, y: 0, zoom: 8 };
       draw();
       log('View reset.');
     }
