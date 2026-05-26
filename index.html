@@ -416,6 +416,13 @@
         this.wheelbase = null;
         this.weightRatioFront = null;
         this.weightRatioRear = null;
+        this.lxf = null;
+        this.lxr = null;
+        this.lz = null;
+        this.h = null;
+        this.rh = null;
+        this.r = null;
+        this.wh = null;
         this.states = [];
         state.nextVehicleNum++;
       }
@@ -835,11 +842,11 @@
           <input type="number" step="1" data-target="vehicle" data-prop="weight" value="${vehicle.weight}" />
         </div>
         <div class="field">
-          <label>Wheelbase Wr (ft)</label>
+          <label>Wheelbase Lwb (ft)</label>
           <input type="number" step="1" data-target="vehicle" data-prop="wheelbase" value="${vehicle.wheelbase}" />
         </div>
         <div class="field">
-            <label>Weight Ratio Wr</label>
+            <label>Weight Ratio W/R</label>
         </div>
         <div class="row">
           <div class="field">
@@ -850,6 +857,44 @@
             <label>Rear (%)</label>
             <input type="number" step="0.1" data-target="vehicle" data-prop="weightRatioRear" value="${vehicle.weightRatioRear}" />
           </div>
+        </div>
+        <div class="field">
+            <label>Rear Hoist Parameters</label>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Tire Radius r (ft)</label>
+            <input type="number" step="0.1" data-target="vehicle" data-prop="r" value="${vehicle.r}" />
+          </div>
+          <div class="field">
+            <label>Ground Lift Height rh (ft)</label>
+            <input type="number" step="0.1" data-target="vehicle" data-prop="rh" value="${vehicle.rh}" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Axle Lift Height h (ft)</label>
+            <input type="number" step="0.1" data-target="vehicle" data-prop="h" value="${vehicle.h}" />
+          </div>
+          <div class="field">
+            <label>Front Axle Weight Wh (lbs)</label>
+            <input type="number" step="0.1" data-target="vehicle" data-prop="wh" value="${vehicle.wh}" />
+          </div>
+        </div>
+        <div class="field">
+            <label>Center of Gravity Dimensions</label>
+        </div>
+        <div class="field">
+          <label>Distance from Front Axle Lxf (ft)</label>
+          <input type="number" step="1" data-target="vehicle" data-prop="lxf" value="${vehicle.lxf}" />
+        </div>
+        <div class="field">
+          <label>Distance from Rear Axle Lxr (ft)</label>
+          <input type="number" step="1" data-target="vehicle" data-prop="lxr" value="${vehicle.lxr}" />
+        </div>
+        <div class="field">
+          <label>Height Above Ground Lz (ft)</label>
+          <input type="number" step="1" data-target="vehicle" data-prop="lz" value="${vehicle.lz}" />
         </div>
       `;
     }
