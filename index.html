@@ -545,7 +545,49 @@
         log("Lxf is indeterminate, missing requirements: " + missingReqs, 'warn');
       }
 
-      
+      // Calculate and log lxr
+      // lxr=Wf*Lwb/w
+      log("Lxr calculation:");
+      missingReqs = checkMissingCalcReqs(vehicle, ['weight', 'weightRatioFront', 'wheelbase']);
+      if (missingReqs.length == 0) {
+        let lxr = ((.01*vehicle.weightRatioFront*vehicle.weight) * vehicle.wheelbase) / vehicle.weight;
+        vehicle.lxr = lxr;
+        log(
+          `Lxr = (Wf)(Lwb)/W = (.01)` +
+          `(${vehicle.weightRatioFront.toFixed(2)})` +
+          `(${vehicle.weight.toFixed(2)})` +
+          `(${vehicle.wheelbase.toFixed(2)})` +
+          `/${vehicle.weight.toFixed(2)}`
+        );
+        log("Lxr = " + lxr.toFixed(3) + " ft", 'result');
+      }
+      else {
+        log("Lxr is indeterminate, missing requirements: " + missingReqs, 'warn');
+      }
+
+      // Calculate and log lxz
+      // lxz=(Lwb*sqrt(Lwb**2-h**2)*(Wh-Wf))/(h*W)+r
+      log("Lxr calculation:");
+      missingReqs = checkMissingCalcReqs(vehicle, ['weight', 'weightRatioFront', 'wheelbase', 'wh', 'h', 'r']);
+      if (missingReqs.length == 0) {
+        let lxz = (vehicle.wheelbase * Math.sqrt(vehicle.wheelbase**2 - vehicle.h**2) * (vehicle.wh - (.01*vehicle.weightRatioFront*vehicle.weight))) / (vehicle.h * vehicle.weight) + vehicle.r;
+        vehicle.lxz = lxz;
+        
+        // TODO: Make log showe lxz and not lxr
+        log(
+          `Lxr = (Wf)(Lwb)/W = (.01)` +
+          `(${vehicle.weightRatioFront.toFixed(2)})` +
+          `(${vehicle.weight.toFixed(2)})` +
+          `(${vehicle.wheelbase.toFixed(2)})` +
+          `/${vehicle.weight.toFixed(2)}`
+        );
+        log("Lxz = " + lxz.toFixed(3) + " ft", 'result');
+      }
+      else {
+        log("Lxr is indeterminate, missing requirements: " + missingReqs, 'warn');
+      }
+
+  
       // Log end of calc and update inspector
       log('---------------------------------------------');
       log('End ' + vehicle.label + ' calculations.');
