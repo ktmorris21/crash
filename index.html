@@ -218,6 +218,12 @@
       color: #1f8f4d;
     }
 
+    input[readonly] {
+      
+      color: #666;
+      border: 1px dashed #aaa;
+    }
+
   </style>
 </head>
 <body>
@@ -518,7 +524,7 @@
       if (missingReqs.length == 0) {
         let h = vehicle.rh - vehicle.r;
         vehicle.h = h;
-        log("h = rh - r = " + vehicle.r.toFixed(3) + " - " + vehicle.rh.toFixed(3));
+        log("h = rh - r = " + vehicle.rh.toFixed(3) + " - " + vehicle.r.toFixed(3)); 
         log("h = " + h.toFixed(3) + " ft", 'result');
       }
       else {
@@ -566,25 +572,25 @@
       }
 
       // Calculate and log lxz
-      // lxz=(Lwb*sqrt(Lwb**2-h**2)*(Wh-Wf))/(h*W)+r
-      log("Lxr calculation:");
+      // lz=(Lwb*sqrt(Lwb**2-h**2)*(Wh-Wf))/(h*W)+r
+      log("Lz calculation:");
       missingReqs = checkMissingCalcReqs(vehicle, ['weight', 'weightRatioFront', 'wheelbase', 'wh', 'h', 'r']);
       if (missingReqs.length == 0) {
-        let lxz = (vehicle.wheelbase * Math.sqrt(vehicle.wheelbase**2 - vehicle.h**2) * (vehicle.wh - (.01*vehicle.weightRatioFront*vehicle.weight))) / (vehicle.h * vehicle.weight) + vehicle.r;
-        vehicle.lxz = lxz;
+        let lz = (vehicle.wheelbase * Math.sqrt(vehicle.wheelbase**2 - vehicle.h**2) * (vehicle.wh - (.01*vehicle.weightRatioFront*vehicle.weight))) / (vehicle.h * vehicle.weight) + vehicle.r;
+        vehicle.lz = lz;
         
         // TODO: Make log showe lxz and not lxr
+        log('Lz = (Lwb*sqrt(Lwb**2-h**2)*(Wh-Wf))/(h*W)+r')
         log(
-          `Lxr = (Wf)(Lwb)/W = (.01)` +
-          `(${vehicle.weightRatioFront.toFixed(2)})` +
-          `(${vehicle.weight.toFixed(2)})` +
-          `(${vehicle.wheelbase.toFixed(2)})` +
-          `/${vehicle.weight.toFixed(2)}`
+          `(${vehicle.wheelbase.toFixed(2)}*` +
+          `sqrt(${vehicle.wheelbase.toFixed(2)}**2-${vehicle.h.toFixed(2)}**2)` +
+          `*(${vehicle.wh.toFixed(2)}-(.01*${vehicle.weightRatioFront.toFixed(2)}*${vehicle.weight.toFixed(2)})))` +
+          ` / (${vehicle.h.toFixed(2)}*${vehicle.weight.toFixed(2)}) + ${vehicle.r.toFixed(2)}`
         );
-        log("Lxz = " + lxz.toFixed(3) + " ft", 'result');
+        log("Lz = " + lz.toFixed(3) + " ft", 'result');
       }
       else {
-        log("Lxr is indeterminate, missing requirements: " + missingReqs, 'warn');
+        log("Lz is indeterminate, missing requirements: " + missingReqs, 'warn');
       }
 
   
@@ -1043,7 +1049,7 @@
           </div>
           <div class="field">
             <label>Rear (%)</label>
-            <input type="number" step="0.1" data-target="vehicle" data-prop="weightRatioRear" value="${vehicle.weightRatioRear}" />
+            <input type="number" step="0.1" data-target="vehicle" data-prop="weightRatioRear" value="${vehicle.weightRatioRear}" readonly />
           </div>
         </div>
         <div class="field">
@@ -1256,7 +1262,18 @@
           const prop = ev.target.dataset.prop;
           const value = parseInputValue(ev.target);
 
-          if (target === 'vehicle' && vehicle) vehicle[prop] = value;
+          if (target === 'vehicle' && vehicle) {
+            vehicle[prop] = value;
+            if (prop === 'weightRatioFront') {
+              const front = Number(vehicle.weightRatioFront);
+              if (Number.isFinite(front) && front >= 0 && front <= 100) {
+                vehicle.weightRatioRear = 100 - front;
+                const rearInput = document.querySelector('input[data-target="vehicle"][data-prop="weightRatioRear"]');
+                rearInput.value = vehicle.weightRatioRear;
+              }
+            }
+          }
+
           if (target === 'state' && vehicleState) vehicleState[prop] = value;
 
           if (target === 'event' && event) {
