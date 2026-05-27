@@ -570,39 +570,22 @@
 
     function log(message, type = 'info') {
       const time = new Date().toLocaleString();
-
       const div = document.createElement('div');
-
       let className = 'log-entry';
-
       if (type === 'warn') {
         className += ' log-warn';
       }
       else if (type === 'result') {
         className += ' log-result';
       }
-
       div.className = className;
-
       div.innerHTML = `
         <span class="log-time">[${time}]</span>
         ${escapeHtml(message)}
       `;
-
       consoleEl.appendChild(div);
       consoleEl.scrollTop = consoleEl.scrollHeight;
     }
-
-    /*
-    function log(message, type = 'info') {
-      const time = new Date().toLocaleString();
-      const div = document.createElement('div');
-      div.className = `log-entry ${type === 'warn' ? 'log-warn' : ''}`;
-      div.innerHTML = `<span class="log-time">[${time}]</span> ${escapeHtml(message)}`;
-      consoleEl.appendChild(div);
-      consoleEl.scrollTop = consoleEl.scrollHeight;
-    }
-    */
 
     function escapeHtml(text) {
       return String(text ?? '').replace(/[&<>'"]/g, c => ({
@@ -993,15 +976,15 @@
             <label>Center of Gravity Dimensions</label>
         </div>
         <div class="field">
-          <label>Distance from Front Axle Lxf (ft)</label>
+          <label class="calc-capable">Distance from Front Axle Lxf (ft)</label>
           <input type="number" step="1" data-target="vehicle" data-prop="lxf" value="${vehicle.lxf}" />
         </div>
         <div class="field">
-          <label>Distance from Rear Axle Lxr (ft)</label>
+          <label class="calc-capable">Distance from Rear Axle Lxr (ft)</label>
           <input type="number" step="1" data-target="vehicle" data-prop="lxr" value="${vehicle.lxr}" />
         </div>
         <div class="field">
-          <label>Height Above Ground Lz (ft)</label>
+          <label class="calc-capable">Height Above Ground Lz (ft)</label>
           <input type="number" step="1" data-target="vehicle" data-prop="lz" value="${vehicle.lz}" />
         </div>
         <div class="field">
@@ -1369,6 +1352,93 @@
     function degToRad(deg) { return deg * Math.PI / 180; }
     function radToDeg(rad) { return rad * 180 / Math.PI; }
 
+
+/// event select work
+
+function distancePointToSegment(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+
+  if (dx === 0 && dy === 0) {
+    return Math.hypot(px - x1, py - y1);
+  }
+
+  const t = Math.max(0, Math.min(1,
+    ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)
+  ));
+
+  const closestX = x1 + t * dx;
+  const closestY = y1 + t * dy;
+
+  return Math.hypot(px - closestX, py - closestY);
+}
+
+function hitTestEvent(worldPoint) {
+  const tolerance = 10 / state.camera.zoom;
+
+  for (let i = state.events.length - 1; i >= 0; i--) {
+    const event = state.events[i];
+
+    const vehicle = findVehicle(event.vehicleId);
+    if (!vehicle) continue;
+
+    const fromState = vehicle.states.find(s => s.id === event.fromStateId);
+    const toState = vehicle.states.find(s => s.id === event.toStateId);
+
+    if (!fromState || !toState) continue;
+
+    const dist = distancePointToSegment(
+      worldPoint.x,
+      worldPoint.y,
+      fromState.x,
+      fromState.y,
+      toState.x,
+      toState.y
+    );
+
+    if (dist <= tolerance) {
+      return event;
+    }
+  }
+
+  return null;
+}
+ 
+
+canvas.addEventListener('pointerdown', event => {
+  canvas.setPointerCapture(event.pointerId);
+  const world = screenToWorld(event.clientX, event.clientY);
+
+  const hitState = hitTestVehicleState(world);
+  const hitEvent = hitTestEvent(world);
+
+  if (event.button === 1 || event.button === 2) {
+    state.interaction = {
+      mode: 'pan',
+      pointerStart: { x: event.clientX, y: event.clientY },
+      cameraStart: { ...state.camera }
+    };
+    return;
+  }
+
+  if (hitState) {
+    selectState(hitState.vehicle.id, hitState.vehicleState.id);
+    state.interaction = {
+      mode: event.shiftKey ? 'rotateState' : 'dragState',
+      pointerStart: world,
+      stateStart: {
+        x: hitState.vehicleState.x,
+        y: hitState.vehicleState.y,
+        headingDeg: hitState.vehicleState.headingDeg
+      }
+    };
+  } else if (hitEvent) {
+    selectEvent(hitEvent.id);
+  } else {
+    clearSelection();
+  }
+});
+/*
     canvas.addEventListener('pointerdown', event => {
       canvas.setPointerCapture(event.pointerId);
       const world = screenToWorld(event.clientX, event.clientY);
@@ -1394,6 +1464,7 @@
         clearSelection();
       }
     });
+    */
 
     canvas.addEventListener('pointermove', event => {
       const interaction = state.interaction;
@@ -1441,7 +1512,7 @@
     canvas.addEventListener('wheel', event => {
       event.preventDefault();
       const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
-      state.camera.zoom = Math.min(6, Math.max(0.15, state.camera.zoom * zoomFactor));
+      state.camera.zoom = Math.min(8, Math.max(0.15, state.camera.zoom * zoomFactor));
       draw();
     }, { passive: false });
 
