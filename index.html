@@ -473,6 +473,7 @@
     }
 
     function checkMissingCalcReqs(entity, reqs) {
+      // Returns any missing calculation requirements
       result = [];
       for (const req of reqs) {
         if (entity[req] != null) {
@@ -486,10 +487,27 @@
     }
 
     function calculateVehicle() {
+      // Get the selected vehicle and log start of calc
       const vehicle = state.vehicles.find(v => v.id === state.selectedVehicleId);
+      log('---------------------------------------------');
+      log('Start ' + vehicle.label + ' calculations.');
+      log('---------------------------------------------');
+      // Calculate and log h
       let missingReqs = checkMissingCalcReqs(vehicle, ['rh', 'r']);
-      console.log("Missing reqs: " + missingReqs);
-      log("test message");
+      if (missingReqs.length == 0) {
+        let h = vehicle.rh - vehicle.r;
+        vehicle.h = h;
+        log("h calculation:");
+        log("h = rh - r = " + vehicle.r.toFixed(3) + " - " + vehicle.rh.toFixed(3));
+        log("h = " + h.toFixed(3) + " ft");
+      }
+      else {
+        log("h is indeterminate, missing requirements: " + missingReqs);
+      }
+      log('---------------------------------------------');
+      log('End ' + vehicle.label + ' calculations.');
+      log('---------------------------------------------');
+      renderInspector();
     }
 
     function getEventDefinition(eventType) {
