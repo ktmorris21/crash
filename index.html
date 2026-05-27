@@ -743,6 +743,32 @@
       ctx.fill();
     }
 
+    // Helper function for drawVehicleState() to draw CoG
+    function getCogLocalX(vehicle, lengthPx) {
+      const rearAxleX = -lengthPx * 0.25;
+      const frontAxleX = lengthPx * 0.25;
+      const wheelbasePx = frontAxleX - rearAxleX;
+
+      let fractionFromRear = 0.60; // default: 60% from rear axle, 40% from front axle
+
+      const lxf = Number(vehicle.lxf);
+      const lxr = Number(vehicle.lxr);
+
+      if (Number.isFinite(lxf) && Number.isFinite(lxr) && lxf > 0 && lxr > 0) {
+        fractionFromRear = lxr / (lxf + lxr);
+      } else {
+        let frontRatio = Number(vehicle.weightRatioFront ?? vehicle.weightFrontRatio);
+        if (Number.isFinite(frontRatio) && frontRatio > 0) {
+          if (frontRatio > 1) frontRatio /= 100;
+          fractionFromRear = frontRatio;
+        }
+      }
+
+      return rearAxleX + fractionFromRear * wheelbasePx;
+    }
+
+
+
     function drawVehicleState(vehicle, s) {
       const center = worldToScreen(s.x, s.y);
       const lengthPx = s.length * state.camera.zoom;
@@ -778,6 +804,32 @@
       ctx.lineTo(lengthPx / 2 - 18, widthPx * 0.25);
       ctx.closePath();
       ctx.fill();
+
+      // Center of gravity symbol
+      const cogX = getCogLocalX(vehicle, lengthPx);
+      const cogY = 0;
+      const cogR = Math.max(5, Math.min(widthPx * 0.22, 10));
+
+      ctx.save();
+      ctx.translate(cogX, cogY);
+
+      ctx.strokeStyle = '#f8fafc';
+      ctx.fillStyle = '#020617';
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.arc(0, 0, cogR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-cogR * 1.4, 0);
+      ctx.lineTo(cogR * 1.4, 0);
+      ctx.moveTo(0, -cogR * 1.4);
+      ctx.lineTo(0, cogR * 1.4);
+      ctx.stroke();
+
+      ctx.restore();
 
       ctx.rotate(-angle);
       ctx.fillStyle = '#e5e7eb';
