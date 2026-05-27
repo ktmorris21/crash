@@ -198,7 +198,26 @@
 
     .log-entry { margin-bottom: 4px; }
     .log-time { color: var(--muted); }
-    .log-warn { color: var(--danger); }
+    .log-warn {
+       color: #ffb347;  
+    }
+    .log-result {
+      color: #4caf50;
+      font-weight: 600;
+    }
+    .calc-button {
+      background: #1f8f4d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .calc-capable {
+      color: #1f8f4d;
+    }
+
   </style>
 </head>
 <body>
@@ -492,18 +511,42 @@
       log('---------------------------------------------');
       log('Start ' + vehicle.label + ' calculations.');
       log('---------------------------------------------');
+      
       // Calculate and log h
+      log("h calculation:");
       let missingReqs = checkMissingCalcReqs(vehicle, ['rh', 'r']);
       if (missingReqs.length == 0) {
         let h = vehicle.rh - vehicle.r;
         vehicle.h = h;
-        log("h calculation:");
         log("h = rh - r = " + vehicle.r.toFixed(3) + " - " + vehicle.rh.toFixed(3));
-        log("h = " + h.toFixed(3) + " ft");
+        log("h = " + h.toFixed(3) + " ft", 'result');
       }
       else {
-        log("h is indeterminate, missing requirements: " + missingReqs);
+        log("h is indeterminate, missing requirements: " + missingReqs, 'warn');
       }
+
+      // Calculate and log lxf
+      // lxf=Wr*Lwb/w
+      log("Lxf calculation:");
+      missingReqs = checkMissingCalcReqs(vehicle, ['weight', 'weightRatioRear', 'wheelbase']);
+      if (missingReqs.length == 0) {
+        let lxf = ((.01*vehicle.weightRatioRear*vehicle.weight) * vehicle.wheelbase) / vehicle.weight;
+        vehicle.lxf = lxf;
+        log(
+          `Lxf = (Wr)(Lwb)/W = (.01)` +
+          `(${vehicle.weightRatioRear.toFixed(2)})` +
+          `(${vehicle.weight.toFixed(2)})` +
+          `(${vehicle.wheelbase.toFixed(2)})` +
+          `/${vehicle.weight.toFixed(2)}`
+        );
+        log("Lxf = " + lxf.toFixed(3) + " ft", 'result');
+      }
+      else {
+        log("Lxf is indeterminate, missing requirements: " + missingReqs, 'warn');
+      }
+
+      
+      // Log end of calc and update inspector
       log('---------------------------------------------');
       log('End ' + vehicle.label + ' calculations.');
       log('---------------------------------------------');
@@ -527,12 +570,39 @@
 
     function log(message, type = 'info') {
       const time = new Date().toLocaleString();
+
+      const div = document.createElement('div');
+
+      let className = 'log-entry';
+
+      if (type === 'warn') {
+        className += ' log-warn';
+      }
+      else if (type === 'result') {
+        className += ' log-result';
+      }
+
+      div.className = className;
+
+      div.innerHTML = `
+        <span class="log-time">[${time}]</span>
+        ${escapeHtml(message)}
+      `;
+
+      consoleEl.appendChild(div);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    /*
+    function log(message, type = 'info') {
+      const time = new Date().toLocaleString();
       const div = document.createElement('div');
       div.className = `log-entry ${type === 'warn' ? 'log-warn' : ''}`;
       div.innerHTML = `<span class="log-time">[${time}]</span> ${escapeHtml(message)}`;
       consoleEl.appendChild(div);
       consoleEl.scrollTop = consoleEl.scrollHeight;
     }
+    */
 
     function escapeHtml(text) {
       return String(text ?? '').replace(/[&<>'"]/g, c => ({
@@ -911,7 +981,7 @@
         </div>
         <div class="row">
           <div class="field">
-            <label>Axle Lift Height h (ft)</label>
+            <label class="calc-capable">Axle Lift Height h (ft)</label>
             <input type="number" step="0.1" data-target="vehicle" data-prop="h" value="${vehicle.h}" />
           </div>
           <div class="field">
@@ -937,7 +1007,7 @@
         <div class="field">
             <label>Calculate Blanks / Integrity Check</label>
         </div>
-        <button id="vehicleCalculateBtn" onclick="calculateVehicle()">Calculate</button>
+        <button class="calc-button" id="vehicleCalculateBtn" onclick="calculateVehicle()">Calculate</button>
       `;
     }
 
