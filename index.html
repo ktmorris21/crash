@@ -472,6 +472,26 @@
       }
     }
 
+    function checkMissingCalcReqs(entity, reqs) {
+      result = [];
+      for (const req of reqs) {
+        if (entity[req] != null) {
+          continue;
+        }
+        else {
+          result.push(req);
+        }
+      }
+      return result;
+    }
+
+    function calculateVehicle() {
+      const vehicle = state.vehicles.find(v => v.id === state.selectedVehicleId);
+      let missingReqs = checkMissingCalcReqs(vehicle, ['rh', 'r']);
+      console.log("Missing reqs: " + missingReqs);
+      log("test message");
+    }
+
     function getEventDefinition(eventType) {
       return eventTypeRegistry[eventType] || eventTypeRegistry.custom;
     }
@@ -488,7 +508,7 @@
     }
 
     function log(message, type = 'info') {
-      const time = new Date().toLocaleTimeString();
+      const time = new Date().toLocaleString();
       const div = document.createElement('div');
       div.className = `log-entry ${type === 'warn' ? 'log-warn' : ''}`;
       div.innerHTML = `<span class="log-time">[${time}]</span> ${escapeHtml(message)}`;
@@ -896,6 +916,10 @@
           <label>Height Above Ground Lz (ft)</label>
           <input type="number" step="1" data-target="vehicle" data-prop="lz" value="${vehicle.lz}" />
         </div>
+        <div class="field">
+            <label>Calculate Blanks / Integrity Check</label>
+        </div>
+        <button id="vehicleCalculateBtn" onclick="calculateVehicle()">Calculate</button>
       `;
     }
 
