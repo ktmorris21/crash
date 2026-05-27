@@ -767,18 +767,20 @@
       return rearAxleX + fractionFromRear * wheelbasePx;
     }
 
-
-
     function drawVehicleState(vehicle, s) {
-      const center = worldToScreen(s.x, s.y);
+      const cogScreen = worldToScreen(s.x, s.y);
       const lengthPx = s.length * state.camera.zoom;
       const widthPx = s.width * state.camera.zoom;
       const angle = degToRad(s.headingDeg);
       const selected = s.id === state.selectedStateId;
 
+      const cogX = getCogLocalX(vehicle, lengthPx);
+      const bodyOffsetX = -cogX;
+
       ctx.save();
-      ctx.translate(center.x, center.y);
+      ctx.translate(cogScreen.x, cogScreen.y);
       ctx.rotate(angle);
+      ctx.translate(bodyOffsetX, 0);
 
       ctx.fillStyle = selected ? '#1d4ed8' : '#334155';
       ctx.strokeStyle = selected ? '#ffffff' : vehicle.color;
@@ -805,13 +807,11 @@
       ctx.closePath();
       ctx.fill();
 
-      // Center of gravity symbol
-      const cogX = getCogLocalX(vehicle, lengthPx);
-      const cogY = 0;
+      // CoG symbol
       const cogR = Math.max(5, Math.min(widthPx * 0.22, 10));
 
       ctx.save();
-      ctx.translate(cogX, cogY);
+      ctx.translate(cogX, 0);
 
       ctx.strokeStyle = '#f8fafc';
       ctx.fillStyle = '#020617';
@@ -831,7 +831,9 @@
 
       ctx.restore();
 
+      ctx.translate(-bodyOffsetX, 0);
       ctx.rotate(-angle);
+
       ctx.fillStyle = '#e5e7eb';
       ctx.font = '12px system-ui';
       ctx.textAlign = 'center';
@@ -840,6 +842,7 @@
 
       ctx.restore();
     }
+
 
     function roundRect(ctx, x, y, w, h, r) {
       const radius = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
