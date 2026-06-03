@@ -437,6 +437,8 @@
         this.id = `veh-${state.nextVehicleNum}`;
         this.label = label || `Vehicle ${state.nextVehicleNum}`;
         this.color = color || vehicleColor(state.nextVehicleNum);
+        this.length = 16;
+        this.width = 6;
         this.weight = null;
         this.wheelbase = null;
         this.weightRatioFront = null;
@@ -481,6 +483,7 @@
         state.nextStateNum++;
       }
     }
+
 
     class EventLink {
       constructor({ vehicleId, fromStateId, toStateId, eventType = 'skidToStop', label = null, notes = '' }) {
@@ -817,8 +820,8 @@
 
     function drawVehicleState(vehicle, s) {
       const cogScreen = worldToScreen(s.x, s.y);
-      const lengthPx = s.length * state.camera.zoom;
-      const widthPx = s.width * state.camera.zoom;
+      const lengthPx = vehicle.length * state.camera.zoom;
+      const widthPx = vehicle.width * state.camera.zoom;
       const angle = degToRad(s.headingDeg);
       const selected = s.id === state.selectedStateId;
 
@@ -1035,6 +1038,18 @@
           <label>Weight W (lbs)</label>
           <input type="number" step="1" data-target="vehicle" data-prop="weight" value="${vehicle.weight}" />
         </div>
+        
+        <div class="row">
+          <div class="field">
+            <label>Length (ft)</label>
+            <input type="number" step="0.1" data-target="vehicle" data-prop="length" value="${vehicle.length}" />
+          </div>
+          <div class="field">
+            <label>Width (ft)</label>
+            <input type="number" step="0.1" data-target="vehicle" data-prop="width" value="${vehicle.width}" />
+          </div>
+        </div>
+
         <div class="field">
           <label>Wheelbase Lwb (ft)</label>
           <input type="number" step="1" data-target="vehicle" data-prop="wheelbase" value="${vehicle.wheelbase}" />
@@ -1100,14 +1115,9 @@
     function renderStateInspector(vehicle, s) {
       return `
         <h3>State Snapshot</h3>
-        <div class="card"><strong>${escapeHtml(vehicle.label)}</strong> remains the same vehicle. This panel edits only <strong>${escapeHtml(s.stateLabel)}</strong>.</div>
         <div class="field">
           <label>State label</label>
           <input data-target="state" data-prop="stateLabel" value="${escapeHtml(s.stateLabel)}" />
-        </div>
-        <div class="field">
-          <label>Time / sequence label</label>
-          <input data-target="state" data-prop="timeLabel" placeholder="e.g. t0, impact, final rest" value="${escapeHtml(s.timeLabel)}" />
         </div>
         <div class="row">
           <div class="field">
@@ -1121,16 +1131,6 @@
         </div>
         <div class="row">
           <div class="field">
-            <label>Length, ft</label>
-            <input type="number" step="0.1" data-target="state" data-prop="length" value="${s.length}" />
-          </div>
-          <div class="field">
-            <label>Width, ft</label>
-            <input type="number" step="0.1" data-target="state" data-prop="width" value="${s.width}" />
-          </div>
-        </div>
-        <div class="row">
-          <div class="field">
             <label>Heading, deg</label>
             <input type="number" step="1" data-target="state" data-prop="headingDeg" value="${s.headingDeg.toFixed(0)}" />
           </div>
@@ -1138,10 +1138,6 @@
             <label>Speed, mph</label>
             <input type="number" step="0.1" data-target="state" data-prop="speedMph" value="${s.speedMph}" />
           </div>
-        </div>
-        <div class="field">
-          <label>Weight (lb)</label>
-          <input type="number" step="1" data-target="state" data-prop="massLb" value="${s.massLb}" />
         </div>
         <div class="field">
           <label>Notes</label>
