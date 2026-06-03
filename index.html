@@ -224,6 +224,60 @@
       border: 1px dashed #aaa;
     }
 
+    .wheel-drag-editor {
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #0f172a;
+}
+
+.wheel-drag-label,
+.vehicle-rear-label {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-bottom: 0.35rem;
+}
+
+.wheel-drag-row {
+  display: grid;
+  grid-template-columns: 1fr 70px 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.wheel-field label {
+  text-align: center;
+}
+
+.vehicle-mini-diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #cbd5e1;
+}
+
+.vehicle-nose {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.vehicle-body {
+  width: 36px;
+  height: 74px;
+  border: 2px solid #64748b;
+  border-radius: 8px;
+  background: #1e293b;
+}
+
+.vehicle-rear-label {
+  margin-top: 0.25rem;
+}
+
+
+
+
   </style>
 </head>
 <body>
@@ -462,8 +516,13 @@
         length = 16,
         width = 6,
         headingDeg = 0,
+        trajectoryDeg = 0,
         speedMph = 0,
         massLb = 4000,
+        dragFactorLF = 0.7,
+        dragFactorRF = 0.7,
+        dragFactorLR = 0.7,
+        dragFactorRR = 0.7,
         stateLabel = null,
         timeLabel = '',
         notes = ''
@@ -477,8 +536,13 @@
         this.length = length;
         this.width = width;
         this.headingDeg = headingDeg;
+        this.trajectoryDeg = trajectoryDeg;
         this.speedMph = speedMph;
         this.massLb = massLb;
+        this.dragFactorLF = dragFactorLF;
+        this.dragFactorRF = dragFactorRF;
+        this.dragFactorLR = dragFactorLR;
+        this.dragFactorRR = dragFactorRR;
         this.notes = notes;
         state.nextStateNum++;
       }
@@ -1113,6 +1177,102 @@
     }
 
     function renderStateInspector(vehicle, s) {
+  return `
+    <h3>State Snapshot</h3>
+
+    <div class="field">
+      <label>State label</label>
+      <input data-target="state" data-prop="stateLabel" value="${escapeHtml(s.stateLabel)}" />
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>X Position (ft)</label>
+        <input type="number" step="0.1" data-target="state" data-prop="x" value="${s.x.toFixed(1)}" />
+      </div>
+      <div class="field">
+        <label>Y Position (ft)</label>
+        <input type="number" step="0.1" data-target="state" data-prop="y" value="${s.y.toFixed(1)}" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Heading (Deg)</label>
+        <input type="number" step="1" data-target="state" data-prop="headingDeg" value="${s.headingDeg.toFixed(0)}" />
+      </div>
+      <div class="field">
+        <label>Trajectory (Deg)</label>
+        <input type="number" step="0.1" data-target="state" data-prop="trajectoryDeg" value="${s.trajectoryDeg.toFixed(0)}" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Speed, mph</label>
+        <input type="number" step="0.1" data-target="state" data-prop="speedMph" value="${s.speedMph}" />
+      </div>
+    </div>
+
+    <h4>Wheel Drag Factors</h4>
+
+    <div class="wheel-drag-editor">
+      <div class="wheel-drag-label front-label">Front</div>
+
+      <div class="wheel-drag-row">
+        <div class="field wheel-field">
+          <label>LF</label>
+          <input type="number" step="0.01" min="0"
+            data-target="state"
+            data-prop="dragFactorLF"
+            value="${s.dragFactorLF ?? 0}" />
+        </div>
+
+        <div class="vehicle-mini-diagram">
+          <div class="vehicle-nose">▲</div>
+          <div class="vehicle-body"></div>
+        </div>
+
+        <div class="field wheel-field">
+          <label>RF</label>
+          <input type="number" step="0.01" min="0"
+            data-target="state"
+            data-prop="dragFactorRF"
+            value="${s.dragFactorRF ?? 0}" />
+        </div>
+      </div>
+
+      <div class="wheel-drag-row">
+        <div class="field wheel-field">
+          <label>LR</label>
+          <input type="number" step="0.01" min="0"
+            data-target="state"
+            data-prop="dragFactorLR"
+            value="${s.dragFactorLR ?? 0}" />
+        </div>
+
+        <div class="vehicle-rear-label">Rear</div>
+
+        <div class="field wheel-field">
+          <label>RR</label>
+          <input type="number" step="0.01" min="0"
+            data-target="state"
+            data-prop="dragFactorRR"
+            value="${s.dragFactorRR ?? 0}" />
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Notes</label>
+      <textarea rows="4" data-target="state" data-prop="notes">${escapeHtml(s.notes)}</textarea>
+    </div>
+  `;
+}
+
+
+    /*
+    function renderStateInspector(vehicle, s) {
       return `
         <h3>State Snapshot</h3>
         <div class="field">
@@ -1131,9 +1291,15 @@
         </div>
         <div class="row">
           <div class="field">
-            <label>Heading, deg</label>
+            <label>Heading (Deg)</label>
             <input type="number" step="1" data-target="state" data-prop="headingDeg" value="${s.headingDeg.toFixed(0)}" />
           </div>
+          <div class="field">
+            <label>Trajectory (Deg)</label>
+            <input type="number" step="0.1" data-target="state" data-prop="trajectoryDeg" value="${s.trajectoryDeg.toFixed(0)}" />
+          </div>
+        </div>
+        <div class="row">
           <div class="field">
             <label>Speed, mph</label>
             <input type="number" step="0.1" data-target="state" data-prop="speedMph" value="${s.speedMph}" />
@@ -1143,12 +1309,11 @@
           <label>Notes</label>
           <textarea rows="4" data-target="state" data-prop="notes">${escapeHtml(s.notes)}</textarea>
         </div>
-        <div class="inline-actions">
-          <button data-action="duplicate-state">Duplicate State</button>
-          <button data-action="add-event-from-state">Add Event From This State</button>
-        </div>
+
       `;
     }
+
+    */
 
     function renderEventInspector(event) {
       ensureEventInputs(event);
@@ -1156,7 +1321,6 @@
       const eventDef = getEventDefinition(event.eventType);
       return `
         <h3>Event / Action</h3>
-        <div class="card">This is a generic event shell plus event-type-specific fields from the registry.</div>
         <div class="field">
           <label>Event label</label>
           <input data-target="event" data-prop="label" value="${escapeHtml(event.label)}" />
@@ -1331,7 +1495,12 @@
         length: last.length,
         width: last.width,
         headingDeg: last.headingDeg,
+        trajectoryDeg: last.trajectoryDeg,
         speedMph: last.speedMph,
+        dragFactorLF: last.dragFactorLF,
+        dragFactorRF: last.dragFactorRF,
+        dragFactorLR: last.dragFactorLR,
+        dragFactorRR: last.dragFactorRR,
         massLb: last.massLb
       } : {};
       const s = new VehicleState(vehicle, { ...base, ...options });
