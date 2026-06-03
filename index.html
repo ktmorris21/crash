@@ -286,7 +286,7 @@
       <div class="toolbar">
         <button id="addVehicleBtn">Add Vehicle</button>
         <button id="addEventBtn">Add Event</button>
-        <button id="calculateBtn">Calculate Selected Event</button>
+        <!-- <button id="calculateBtn">Calculate Selected Event</button> -->
         <!-- <button id="togglePathsBtn">Hide Paths</button> -->
         <!--<button id="duplicateStateBtn">Duplicate State</button> -->
         <button id="deleteBtn" class="danger">Delete Selected</button>
@@ -1325,7 +1325,7 @@
       const vehicle = findVehicle(event.vehicleId);
       const eventDef = getEventDefinition(event.eventType);
       return `
-        <h3>Event / Action</h3>
+        <h3>Event Properties</h3>
         <div class="field">
           <label>Event label</label>
           <input data-target="event" data-prop="label" value="${escapeHtml(event.label)}" />
@@ -1488,13 +1488,20 @@
     }
 
     function addVehicle() {
-      const vehicle = new Vehicle();
-      state.vehicles.push(vehicle);
-      const s = addState(vehicle.id, { x: state.vehicles.length * 8 - 20, y: state.vehicles.length * 6 - 10 });
-      selectState(vehicle.id, s.id);
-      log(`Added ${vehicle.label} with initial state ${s.stateLabel}.`);
-      return vehicle;
-    }
+    const vehicle = new Vehicle();
+    state.vehicles.push(vehicle);
+
+    const isFirstVehicle = state.vehicles.length === 1;
+
+    const s = addState(vehicle.id, {
+      x: isFirstVehicle ? 0 : state.vehicles.length * 8 - 20,
+      y: isFirstVehicle ? 0 : state.vehicles.length * 6 - 10
+    });
+
+    selectState(vehicle.id, s.id);
+    log(`Added ${vehicle.label} with initial state ${s.stateLabel}.`);
+    return vehicle;
+  }
 
     function addState(vehicleId, options = {}) {
       const vehicle = findVehicle(vehicleId);
