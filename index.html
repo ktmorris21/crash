@@ -385,10 +385,7 @@
         },
         calculate({ event, from, to }) {
           ensureEventInputs(event);
-          const geomDistanceFt = from && to ? distanceBetweenStates(from, to) : 0;
-          const distanceFt = event.inputs.useStateDistance
-            ? geomDistanceFt
-            : Number(event.inputs.skidDistanceFt || 0);
+          const distanceFt = distanceBetweenStates(from, to);
 
           // Placeholder formula shell. Replace with your verified reconstruction logic.
           // Common simple skid form is around V = sqrt(30 * d * f * efficiency), with grade handling varying by convention.
@@ -397,8 +394,7 @@
           const speedMph = Math.sqrt(Math.max(0, 30 * distanceFt * (effectiveDrag + gradeAsDrag)));
 
           event.calculated = {
-            geometryDistanceFt: round(geomDistanceFt, 2),
-            distanceUsedFt: round(distanceFt, 2),
+            distanceFt: round(distanceFt, 2),
             effectiveDrag: round(effectiveDrag, 3),
             placeholderSpeedMph: round(speedMph, 1)
           };
@@ -817,6 +813,13 @@
       }
     }
 
+    function distanceBetweenStatesIds(stateId1, stateId2)
+    {
+      state1 = findState(stateId1);
+      state2 = findState(stateId2);
+      return distanceBetweenStates(state1, state2);
+    }
+    
     function drawEvents() {
       for (const e of state.events) {
         const from = findState(e.fromStateId);
@@ -839,6 +842,8 @@
         ctx.font = '12px system-ui';
         ctx.textAlign = 'center';
         ctx.fillText(eventDef.label, mid.x, mid.y - 8);
+        distance = distanceBetweenStatesIds(e.fromStateId, e.toStateId).toFixed(2);
+        ctx.fillText(distance + " ft", mid.x, mid.y + 16);
         ctx.restore();
       }
     }
