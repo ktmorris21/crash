@@ -1151,12 +1151,12 @@
         </div>
         <div class="row">
           <div class="field">
-            <label class="calc-capable">Axle Lift Height h (ft)</label>
-            <input type="number" step="0.1" data-target="vehicle" data-prop="h" value="${vehicle.h}" />
-          </div>
-          <div class="field">
             <label>Front Axle Weight Wh (lbs)</label>
             <input type="number" step="0.1" data-target="vehicle" data-prop="wh" value="${vehicle.wh}" />
+          </div>
+          <div class="field">
+            <label class="calc-capable">Axle Lift Height h (ft)</label>
+            <input type="number" step="0.1" data-target="vehicle" data-prop="h" value="${vehicle.h}" />
           </div>
         </div>
         <div class="field">
@@ -1208,7 +1208,7 @@
       </div>
       <div class="field">
         <label>Trajectory (Deg)</label>
-        <input type="number" step="0.1" data-target="state" data-prop="trajectoryDeg" value="${s.trajectoryDeg.toFixed(0)}" />
+        <input type="number" step="1" data-target="state" data-prop="trajectoryDeg" value="${s.trajectoryDeg.toFixed(0)}" />
       </div>
     </div>
 
@@ -1439,7 +1439,13 @@
             }
           }
 
-          if (target === 'state' && vehicleState) vehicleState[prop] = value;
+          // If x or y changed on the inspector, update trajectory
+          if (target === 'state' && vehicleState) {
+            vehicleState[prop] = value;
+            if (prop === 'x' || prop === 'y') {
+              console.log('changed x or y'); 
+            }
+          }
 
           if (target === 'event' && event) {
             if (prop === 'eventType') {
@@ -1560,7 +1566,8 @@
 
     function addEvent() {
       const vehicle = getSelectedVehicle() || state.vehicles[0];
-      if (!vehicle || vehicle.states.length < 1) return log('Add a vehicle and state first.', 'warn');
+      if (!vehicle || vehicle.states.length < 1) return log('Add a vehicle before adding an event.', 'warn');
+      
       const from = getSelectedState() || vehicle.states[0];
       let to = vehicle.states[vehicle.states.indexOf(from) + 1];
       if (!to) to = addState(vehicle.id, { x: from.x + 20, y: from.y, speedMph: 0 });
@@ -1770,6 +1777,17 @@ canvas.addEventListener('pointerdown', event => {
       if (interaction.mode === 'dragState') {
         s.x = interaction.stateStart.x + (world.x - interaction.pointerStart.x);
         s.y = interaction.stateStart.y + (world.y - interaction.pointerStart.y);
+        // If there is an event connecting this to a previous state, need to calculate trajectory
+        // Need to look through the events and see if any have this state as a "to"
+        for (e of state.events) {
+          if (e.toStateId === s.id || e.fromStateId === s.id) {
+            const currentState = findState(e.toStateId);
+            const previousState = findState(e.fromStateId);
+            const angleDeg = Math.round((Math.atan2(currentState.y - previousState.y, currentState.x - previousState.x) * 180 / Math.PI));
+            //currentState.trajectoryDeg = angleDeg;
+            previousState.trajectoryDeg = angleDeg;
+          }
+        }
         renderInspector();
         draw();
       }
@@ -1786,7 +1804,7 @@ canvas.addEventListener('pointerdown', event => {
       if (state.interaction.mode === 'dragState' || state.interaction.mode === 'rotateState') {
         const s = getSelectedState();
         const v = getSelectedVehicle();
-        if (s && v) log(`Updated ${v.label} / ${s.stateLabel}: x=${s.x.toFixed(1)}, y=${s.y.toFixed(1)}, heading=${s.headingDeg.toFixed(0)}°.`);
+        //if (s && v) log(`Updated ${v.label} / ${s.stateLabel}: x=${s.x.toFixed(1)}, y=${s.y.toFixed(1)}, heading=${s.headingDeg.toFixed(0)}°.`);
       }
       state.interaction = { mode: null, pointerStart: null, stateStart: null, cameraStart: null };
     });
@@ -1869,7 +1887,7 @@ canvas.addEventListener('pointerdown', event => {
     };
 
     resizeCanvas();
-
+/*
     // Demo setup.
     const v1 = addVehicle();
     v1.label = 'Vehicle 1';
@@ -1880,10 +1898,10 @@ canvas.addEventListener('pointerdown', event => {
     const v1s2 = addState(v1.id, { x: 36, y: 0, headingDeg: 0, speedMph: 0, stateLabel: 'Position 2', timeLabel: 'final rest' });
     state.events.push(new EventLink({ vehicleId: v1.id, fromStateId: v1.states[0].id, toStateId: v1s2.id, eventType: 'skidToStop', label: 'Skid Event' }));
 
-    selectEvent(state.events[0].id);
-    log('Crash reconstruction scaffold loaded with event-type registry.');
-    log('Try selecting Skid Event or Yaw Event; the inspector fields change by event type.');
-    log('Use window.crashScene in DevTools for experiments/export.');
+    selectEvent(state.events[0].id); */
+    log('Load complete. Click "Add Vehicle" to get started.');
+    //log('Try selecting Skid Event or Yaw Event; the inspector fields change by event type.');
+    //log('Use window.crashScene in DevTools for experiments/export.');
   </script>
 </body>
 </html>
