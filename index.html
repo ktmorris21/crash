@@ -618,16 +618,32 @@
       return result;
     }
 
-    function calculateStaticDragFactor(state) {
-      const vehicle = findVehicle(state.vehicleId);
-      console.log(`calculateStaticDragFactor for ${state.vehicleId} ${state.id} ${state.stateLabel}`);
-      log(`Weighted Average = ${frac('(10 × 20) + (30 × 40)', '10 + 30')}= 35`);
+    function calculateStaticDragFactor(vehState) {
+      const vehicle = findVehicle(vehState.vehicleId);
+
+      log(`Calculating f<sub>Long Static</sub> for ${vehicle.label} at ${vehState.stateLabel}:`)
+      
       // Get weight on each wheel
-      if (vehicle.weightRatioFront == null) {
-        log(`Weight Ratio for ${vehicle.label} has not been defined.`, 'error');
+      if (vehicle.weight == null) {
+        log(`Weight for ${vehicle.label} has not been specified. Static Drag Factor cannot be determined.`, 'error');
         return 'fail';
       }
-
+      if (vehicle.weightRatioFront == null) {
+        log(`Weight Ratio for ${vehicle.label} has not been specified. Static Drag Factor cannot be determined.`, 'error');
+        return 'fail';
+      }
+      
+      const Wf = vehicle.weightRatioFront/100 * vehicle.weight;
+      const Wr = vehicle.weightRatioRear/100 * vehicle.weight;
+      frontWheelWeights = Wf / 2;
+      rearWheelWeights = Wr / 2;
+      log(`w<sub>f</sub> = Front Weight Ratio x w = ${vehicle.weightRatioFront/100} x ${vehicle.weight} = ${Wf} lbs`);
+      log(`w<sub>FR</sub> = w<sub>FL</sub> = ${frac('w<sub>f</sub>', '2')} = ${frac(Wf, 2)} = ${frontWheelWeights} lbs`);
+      log(`f<sub>Long Static</sub> = ${frac('f<sub>FR</sub>w<sub>FR</sub> + f<sub>FL</sub>w<sub>FL</sub> + f<sub>BR</sub>w<sub>BR</sub> + f<sub>BL</sub>w<sub>BL</sub>', 'w<sub>Total</sub>')}`);
+      log(`f<sub>Long Static</sub> = ${frac(`(${vehState.dragFactorRF})(${frontWheelWeights}) + (${vehState.dragFactorLF})(${frontWheelWeights}) + (${vehState.dragFactorRR})(${rearWheelWeights}) + (${vehState.dragFactorLR})(${rearWheelWeights})`, `${vehicle.weight}`)}`);
+      const numerator = vehState.dragFactorRF*frontWheelWeights + vehState.dragFactorLF*frontWheelWeights + vehState.dragFactorRR*rearWheelWeights + vehState.dragFactorLR*rearWheelWeights;
+      const staticDragFactor = numerator / vehicle.weight;
+      log(`f<sub>Long Static</sub> = ${staticDragFactor}`);
     }
 
 
