@@ -424,7 +424,86 @@
             <div class="field">
               <label>Calculate & Apply Skid-to-Stop to Upstream/Downstream States</label>
             </div>
-            <button class="calc-button" id="skidStopCalculateBtn" onclick="calculateSkidStop()">Calculate</button>
+            <button class="calc-button" id="skidStopCalculateBtn" onclick="calculateSkid()">Calculate</button>
+          `;
+        },
+        calculate({ event, from, to }) {
+          ensureEventInputs(event);
+          const distanceFt = distanceBetweenStates(from, to);
+
+          // Placeholder formula shell. Replace with your verified reconstruction logic.
+          // Common simple skid form is around V = sqrt(30 * d * f * efficiency), with grade handling varying by convention.
+          const effectiveDrag = Number(event.inputs.dragFactor || 0) * Number(event.inputs.brakingEfficiency || 1);
+          const gradeAsDrag = Number(event.inputs.gradePercent || 0) / 100;
+          const speedMph = Math.sqrt(Math.max(0, 30 * distanceFt * (effectiveDrag + gradeAsDrag)));
+
+          event.calculated = {
+            distanceFt: round(distanceFt, 2),
+            effectiveDrag: round(effectiveDrag, 3),
+            placeholderSpeedMph: round(speedMph, 1)
+          };
+          return event.calculated;
+        }
+      },
+      skidContinuedMotion: {
+        label: 'Skid - Continued Motion',
+        defaultInputs() {
+          return {
+            dragFactor: 0.70,
+            gradePercent: 0,
+            brakingEfficiency: 1.00,
+            skidDistanceFt: null,
+            useStateDistance: true,
+            dragFactorMode: 'dynamic',
+            endingSpeed: 0
+          };
+        },
+        renderFields(event) {
+          ensureEventInputs(event);
+          return `
+            <h4>Skid to Stop Inputs</h4>
+
+            <div class="field">
+              <label>Static/Dynamic Drag Factor</label>
+              <select data-target="event-input" data-prop="dragFactorMode">
+                <option value="static"
+                  ${event.inputs.dragFactorMode === 'static' ? 'selected' : ''}>
+                  Use Static Drag Factor
+                </option>
+                <option value="dynamic"
+                  ${event.inputs.dragFactorMode === 'dynamic' ? 'selected' : ''}>
+                  Attempt Dynamic Drag Factor
+                </option>
+              </select>
+            </div>
+
+            <!--
+            <div class="field">
+              <label>Manual skid distance, ft</label>
+              <input type="number" step="0.1" data-target="event-input" data-prop="skidDistanceFt" value="${valueOrBlank(event.inputs.skidDistanceFt)}" />
+            </div>
+            -->
+            <div class="row">
+              <div class="field">
+                <label>Roadway Drag Factor</label>
+                <input type="number" step="0.01" data-target="event-input" data-prop="dragFactor" value="${valueOrBlank(event.inputs.dragFactor)}" />
+              </div>
+              <div class="field">
+                <label>Grade (%)</label>
+                <input type="number" step="0.1" data-target="event-input" data-prop="gradePercent" value="${valueOrBlank(event.inputs.gradePercent)}" />
+              </div>
+            </div>
+            <!--
+            <div class="field">
+              <label>Braking efficiency</label>
+              <input type="number" step="0.01" data-target="event-input" data-prop="brakingEfficiency" value="${valueOrBlank(event.inputs.brakingEfficiency)}" />
+            </div>
+            ${renderCalculatedOutputs(event)}
+            -->
+            <div class="field">
+              <label>Calculate & Apply Skid-to-Stop to Upstream/Downstream States</label>
+            </div>
+            <button class="calc-button" id="skidStopCalculateBtn" onclick="calculateSkid()">Calculate</button>
           `;
         },
         calculate({ event, from, to }) {
@@ -652,6 +731,12 @@
       const numerator = vehState.dragFactorFR*frontWheelWeights + vehState.dragFactorFL*frontWheelWeights + vehState.dragFactorBR*rearWheelWeights + vehState.dragFactorBL*rearWheelWeights;
       const staticDragFactor = numerator / vehicle.weight;
       log(`f<sub>Long Static</sub> = ${staticDragFactor}`);
+
+      return {
+        'fLongf': staticDragFactor,
+        'fLongr': staticDragFactor
+      };
+
     }
 
     function calculateDynamicDragFactor(vehState) {
@@ -710,12 +795,15 @@
       const fLongr = round((vehicle.wheelbase*Fr - vehicle.lxr*(Fr-Ff)) / (vehicle.wheelbase - vehicle.lz*(Fr-Ff)),3);
       log(`f<sub>long<sub>r</sub></sub> = ${fLongr} ft`, 'result');
 
-
+      return {
+        'fLongf': fLongf,
+        'fLongr': fLongr
+      };
 
     }
 
 
-    function calculateSkidStop(event = null) {
+    function calculateSkid(event = null) {
       if (event == null) {
         // Logic for finding event, if none provided
         event = state.events.find(e => e.id === state.selectedEventId);
@@ -728,11 +816,16 @@
       // Set downstream vehicle speed to zero (i.e. skid to stop)
       downstreamState = findState(event.toStateId);
       const vehicle = findVehicle(downstreamState.vehicleId);
-      downstreamState.speedMph = 0;
-      log(`Setting downstream vehicle state (${vehicle.label}, ${downstreamState.stateLabel}) to 0 mph (i.e. skid-to-stop).`)
+      if (event.eventType == 'skidToStop') {
+        downstreamState.speedMph = 0;
+        log(`Setting downstream vehicle state (${vehicle.label}, ${downstreamState.stateLabel}) to 0 mph (i.e. skid-to-stop).`)
+      }
 
       // Set upstream vehicle speed from skid calculation
       upstreamState = findState(event.fromStateId);
+
+      const distance = round(distanceBetweenStatesIds(event.fromStateId, event.toStateId), 2);
+
 
       let dragFactor = 0;
 
@@ -759,9 +852,34 @@
         }
         dragFactor = staticDragFactor;
       }
+
+      const grade = event.inputs.gradePercent / 100;
+      let gradeSymbol = '+';
+      if (grade < 0) {
+        gradeSymbol = '';
+      }
+
+      // Check if there is any side skid
+      if (event.headingDeg === event.trajectoryDeg) {
+        // No side skid
+        log('Heading and Trajectory angles match, no side skid.');
+        if (event.eventType == 'skidToStop') {
+          // Skid to stop equation
+          log(`S<sub>${upstreamState.stateLabel}</sub> = √(30d(f±G)) = √(30(${distance})(${dragFactor['fLongf']} ${gradeSymbol} ${grade}))`);
+          speed = Math.sqrt(30*distance*(dragFactor['fLongf']+grade))
+          upstreamState.speedMph = round(speed, 2);
+          log(`S<sub>${upstreamState.stateLabel}</sub> = ${upstreamState.speedMph} mph`, 'result');
+        }
+        else
+        {
+          // Continuing motion equation
+        }
+      }
+      else {
+        // Side skid
+      }
       
     }
-
 
     function calculateVehicle(vehicle = null) {
       // Get the selected vehicle if not provided and log start of calc
