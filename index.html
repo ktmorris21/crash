@@ -201,6 +201,9 @@
     .log-warn {
        color: #ffb347;  
     }
+    .log-error {
+       color: #d31204;  
+    }
     .log-result {
       color: #4caf50;
       font-weight: 600;
@@ -275,10 +278,25 @@
   margin-top: 0.25rem;
 }
 
+.fraction {
+  display: inline-block;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.fraction .top {
+  display: block;
+  border-bottom: 1px solid currentColor;
+  padding: 0 4px;
+}
+
+.fraction .bottom {
+  display: block;
+  padding: 0 4px;
+}
 
 
-
-  </style>
+</style>
 </head>
 <body>
   <div class="app">
@@ -309,6 +327,15 @@
     const ctx = canvas.getContext('2d');
     const consoleEl = document.getElementById('console');
     const inspectorContent = document.getElementById('inspectorContent');
+
+    function frac(numerator, denominator) {
+      return `
+      <span class="fraction">
+        <span class="top">${numerator}</span>
+        <span class="bottom">${denominator}</span>
+      </span>
+      `;
+    }
 
     const state = {
       vehicles: [],
@@ -348,22 +375,30 @@
             gradePercent: 0,
             brakingEfficiency: 1.00,
             skidDistanceFt: null,
-            useStateDistance: true
+            useStateDistance: true,
+            dragFactorMode: 'dynamic'
           };
         },
         renderFields(event) {
           ensureEventInputs(event);
           return `
             <h4>Skid to Stop Inputs</h4>
-            <!--
-            <div class="card">Distance can come from the state-to-state geometry or be manually entered. Calculation here is only a placeholder hook.</div>
+
             <div class="field">
-              <label>Use state-to-state distance</label>
-              <select data-target="event-input" data-prop="useStateDistance" data-type="boolean">
-                <option value="true" ${event.inputs.useStateDistance ? 'selected' : ''}>Yes</option>
-                <option value="false" ${!event.inputs.useStateDistance ? 'selected' : ''}>No, use manual distance</option>
+              <label>Static/Dynamic Drag Factor</label>
+              <select data-target="event-input" data-prop="dragFactorMode">
+                <option value="static"
+                  ${event.inputs.dragFactorMode === 'static' ? 'selected' : ''}>
+                  Use Static Drag Factor
+                </option>
+                <option value="dynamic"
+                  ${event.inputs.dragFactorMode === 'dynamic' ? 'selected' : ''}>
+                  Attempt Dynamic Drag Factor
+                </option>
               </select>
             </div>
+
+            <!--
             <div class="field">
               <label>Manual skid distance, ft</label>
               <input type="number" step="0.1" data-target="event-input" data-prop="skidDistanceFt" value="${valueOrBlank(event.inputs.skidDistanceFt)}" />
@@ -583,6 +618,19 @@
       return result;
     }
 
+    function calculateStaticDragFactor(state) {
+      const vehicle = findVehicle(state.vehicleId);
+      console.log(`calculateStaticDragFactor for ${state.vehicleId} ${state.id} ${state.stateLabel}`);
+      log(`Weighted Average = ${frac('(10 × 20) + (30 × 40)', '10 + 30')}= 35`);
+      // Get weight on each wheel
+      if (vehicle.weightRatioFront == null) {
+        log(`Weight Ratio for ${vehicle.label} has not been defined.`, 'error');
+        return 'fail';
+      }
+
+    }
+
+
     function calculateSkidStop(event = null) {
       if (event == null) {
         // Logic for finding event, none provided
@@ -601,6 +649,18 @@
 
       // Set upstream vehicle speed from skid calculation
       upstreamState = findState(event.fromStateId);
+
+      // Figure dynamic drag factor if user wanted it
+      if (event.inputs.dragFactorMode === 'dynamic')
+      {
+        console.log("I'm in dynamic mode");
+      }
+      else {
+        staticDragFactor = calculateStaticDragFactor(upstreamState);
+        if (staticDragFactor === 'fail') {
+          log(`Calculation failed.`, 'error');
+        }
+      }
       // TODO static and/or dyanmic drag factors - probably need a separate helper function, oh angle drag factor too ha
     }
 
@@ -721,10 +781,13 @@
       else if (type === 'result') {
         className += ' log-result';
       }
+      else if (type === 'error') {
+        className += ' log-error';
+      }
       div.className = className;
       div.innerHTML = `
         <span class="log-time">[${time}]</span>
-        ${escapeHtml(message)}
+        ${message}
       `;
       consoleEl.appendChild(div);
       consoleEl.scrollTop = consoleEl.scrollHeight;
