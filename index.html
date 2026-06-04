@@ -693,13 +693,15 @@
 
       const Ff = (vehState.dragFactorFR + vehState.dragFactorFL) / 2;
       log(`Calculating f<sub>Long<sub>f</sub></sub> for ${vehicle.label} at ${vehState.stateLabel}:`)
-      log(`f<sub>f</sub> = ${frac('f<sub>FR</sub> + f<sub>FL</sub>', '2')} = ${frac(`${vehState.dragFactorFR} + ${vehState.dragFactorFL}`, '2')} = ${Ff}`);
+      log(`f<sub>f</sub> = ${frac('f<sub>FR</sub> + f<sub>FL</sub>', '2')} = ${frac(`${vehState.dragFactorFR} + ${vehState.dragFactorFL}`, '2')} = ${Ff}`, 'result');
       
       const Fr = (vehState.dragFactorBR + vehState.dragFactorBL) / 2;
-      log(`f<sub>r</sub> = ${frac('f<sub>BR</sub> + f<sub>BL</sub>', '2')} = ${frac(`${vehState.dragFactorBR} + ${vehState.dragFactorBL}`, '2')} = ${Fr}`);
+      log(`f<sub>r</sub> = ${frac('f<sub>BR</sub> + f<sub>BL</sub>', '2')} = ${frac(`${vehState.dragFactorBR} + ${vehState.dragFactorBL}`, '2')} = ${Fr}`, 'result');
 
       log(`f<sub>long<sub>f</sub></sub> = ${frac(`l<sub>wb</sub>f<sub>f</sub> - l<sub>x<sub>f</sub></sub>(f<sub>f</sub> - f<sub>r</sub>)`, `l<sub>wb</sub> - l<sub>z</sub>(f<sub>f</sub> - f<sub>r</sub>)`)}`);
       log(`f<sub>long<sub>f</sub></sub> = ${frac(`(${vehicle.wheelbase})(${Ff}) - (${vehicle.lxf})(${Ff} - ${Fr})`, `(${vehicle.wheelbase}) - (${vehicle.lz})(${Ff} - ${Fr})`)}`);
+      const fLongf = round((vehicle.wheelbase*Ff - vehicle.lxf*(Ff-Fr)) / (vehicle.wheelbase - vehicle.lz*(Ff-Fr)),3);
+      log(`f<sub>long<sub>f</sub></sub> = ${fLongf} ft`, 'result');
 
 
     }
