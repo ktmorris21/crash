@@ -1798,10 +1798,12 @@
     const s = addState(vehicle.id, {
       x: isFirstVehicle ? 0 : state.vehicles.length * 8 - 20,
       y: isFirstVehicle ? 0 : state.vehicles.length * 6 - 10
+
     });
 
     selectState(vehicle.id, s.id);
     log(`Added ${vehicle.label} with initial state ${s.stateLabel}.`);
+    selectVehicleOnly(vehicle.id);
     return vehicle;
   }
 
