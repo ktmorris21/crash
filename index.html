@@ -355,6 +355,7 @@
           ensureEventInputs(event);
           return `
             <h4>Skid to Stop Inputs</h4>
+            <!--
             <div class="card">Distance can come from the state-to-state geometry or be manually entered. Calculation here is only a placeholder hook.</div>
             <div class="field">
               <label>Use state-to-state distance</label>
@@ -367,21 +368,24 @@
               <label>Manual skid distance, ft</label>
               <input type="number" step="0.1" data-target="event-input" data-prop="skidDistanceFt" value="${valueOrBlank(event.inputs.skidDistanceFt)}" />
             </div>
+            -->
             <div class="row">
               <div class="field">
-                <label>Drag factor</label>
+                <label>Roadway Drag Factor</label>
                 <input type="number" step="0.01" data-target="event-input" data-prop="dragFactor" value="${valueOrBlank(event.inputs.dragFactor)}" />
               </div>
               <div class="field">
-                <label>Grade, %</label>
+                <label>Grade (%)</label>
                 <input type="number" step="0.1" data-target="event-input" data-prop="gradePercent" value="${valueOrBlank(event.inputs.gradePercent)}" />
               </div>
             </div>
+            <!--
             <div class="field">
               <label>Braking efficiency</label>
               <input type="number" step="0.01" data-target="event-input" data-prop="brakingEfficiency" value="${valueOrBlank(event.inputs.brakingEfficiency)}" />
             </div>
             ${renderCalculatedOutputs(event)}
+            -->
           `;
         },
         calculate({ event, from, to }) {
@@ -1337,6 +1341,7 @@
             ${Object.entries(eventTypeRegistry).map(([key, def]) => `<option value="${key}" ${key === event.eventType ? 'selected' : ''}>${escapeHtml(def.label)}</option>`).join('')}
           </select>
         </div>
+        <!--
         <div class="field">
           <label>Vehicle</label>
           <select data-target="event" data-prop="vehicleId">
@@ -1357,16 +1362,19 @@
             </select>
           </div>
         </div>
-        ${renderEventGeometrySummary(event)}
+        -->
+        <!-- ${renderEventGeometrySummary(event)} -->
         ${eventDef.renderFields(event)}
         <div class="field">
           <label>Notes</label>
           <textarea rows="4" data-target="event" data-prop="notes">${escapeHtml(event.notes)}</textarea>
         </div>
+        <!--
         <div class="inline-actions">
           <button data-action="calculate-event">Calculate Event</button>
           <button data-action="clear-event-calcs">Clear Calculations</button>
         </div>
+        -->
       `;
     }
 
@@ -1575,8 +1583,15 @@
     function addEvent() {
       const vehicle = getSelectedVehicle() || state.vehicles[0];
       if (!vehicle || vehicle.states.length < 1) return log('Add a vehicle before adding an event.', 'warn');
-      
+    
       const from = getSelectedState() || vehicle.states[0];
+      const existingEvent = state.events.find(e => e.fromStateId === from.id);
+      if (existingEvent) {
+        return log(
+          `${from.stateLabel} already has an outgoing event (${existingEvent.label}). A state can only be the from state for one event.`,
+          'warn'
+        );
+      }
       let to = vehicle.states[vehicle.states.indexOf(from) + 1];
       if (!to) to = addState(vehicle.id, { x: from.x + 20, y: from.y, speedMph: 0 });
       const event = new EventLink({ vehicleId: vehicle.id, fromStateId: from.id, toStateId: to.id, eventType: 'skidToStop' });
