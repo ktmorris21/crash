@@ -559,10 +559,10 @@
         trajectoryDeg = 0,
         speedMph = 0,
         massLb = 4000,
-        dragFactorLF = 0.7,
-        dragFactorRF = 0.7,
-        dragFactorLR = 0.7,
-        dragFactorRR = 0.7,
+        dragFactorFL = 0.7,
+        dragFactorFR = 0.7,
+        dragFactorBL = 0.7,
+        dragFactorBR = 0.7,
         stateLabel = null,
         timeLabel = '',
         notes = ''
@@ -579,10 +579,10 @@
         this.trajectoryDeg = trajectoryDeg;
         this.speedMph = speedMph;
         this.massLb = massLb;
-        this.dragFactorLF = dragFactorLF;
-        this.dragFactorRF = dragFactorRF;
-        this.dragFactorLR = dragFactorLR;
-        this.dragFactorRR = dragFactorRR;
+        this.dragFactorFL = dragFactorFL;
+        this.dragFactorFR = dragFactorFR;
+        this.dragFactorBL = dragFactorBL;
+        this.dragFactorBR = dragFactorBR;
         this.notes = notes;
         state.nextStateNum++;
       }
@@ -640,8 +640,8 @@
       log(`w<sub>f</sub> = Front Weight Ratio x w = ${vehicle.weightRatioFront/100} x ${vehicle.weight} = ${Wf} lbs`);
       log(`w<sub>FR</sub> = w<sub>FL</sub> = ${frac('w<sub>f</sub>', '2')} = ${frac(Wf, 2)} = ${frontWheelWeights} lbs`);
       log(`f<sub>Long Static</sub> = ${frac('f<sub>FR</sub>w<sub>FR</sub> + f<sub>FL</sub>w<sub>FL</sub> + f<sub>BR</sub>w<sub>BR</sub> + f<sub>BL</sub>w<sub>BL</sub>', 'w<sub>Total</sub>')}`);
-      log(`f<sub>Long Static</sub> = ${frac(`(${vehState.dragFactorRF})(${frontWheelWeights}) + (${vehState.dragFactorLF})(${frontWheelWeights}) + (${vehState.dragFactorRR})(${rearWheelWeights}) + (${vehState.dragFactorLR})(${rearWheelWeights})`, `${vehicle.weight}`)}`);
-      const numerator = vehState.dragFactorRF*frontWheelWeights + vehState.dragFactorLF*frontWheelWeights + vehState.dragFactorRR*rearWheelWeights + vehState.dragFactorLR*rearWheelWeights;
+      log(`f<sub>Long Static</sub> = ${frac(`(${vehState.dragFactorFR})(${frontWheelWeights}) + (${vehState.dragFactorFL})(${frontWheelWeights}) + (${vehState.dragFactorBR})(${rearWheelWeights}) + (${vehState.dragFactorBL})(${rearWheelWeights})`, `${vehicle.weight}`)}`);
+      const numerator = vehState.dragFactorFR*frontWheelWeights + vehState.dragFactorFL*frontWheelWeights + vehState.dragFactorBR*rearWheelWeights + vehState.dragFactorBL*rearWheelWeights;
       const staticDragFactor = numerator / vehicle.weight;
       log(`f<sub>Long Static</sub> = ${staticDragFactor}`);
     }
@@ -1337,11 +1337,11 @@
 
       <div class="wheel-drag-row">
         <div class="field wheel-field">
-          <label>LF</label>
+          <label>FL</label>
           <input type="number" step="0.01" min="0"
             data-target="state"
-            data-prop="dragFactorLF"
-            value="${s.dragFactorLF ?? 0}" />
+            data-prop="dragFactorFL"
+            value="${s.dragFactorFL ?? 0}" />
         </div>
 
         <div class="vehicle-mini-diagram">
@@ -1350,31 +1350,31 @@
         </div>
 
         <div class="field wheel-field">
-          <label>RF</label>
+          <label>FR</label>
           <input type="number" step="0.01" min="0"
             data-target="state"
-            data-prop="dragFactorRF"
-            value="${s.dragFactorRF ?? 0}" />
+            data-prop="dragFactorFR"
+            value="${s.dragFactorFR ?? 0}" />
         </div>
       </div>
 
       <div class="wheel-drag-row">
         <div class="field wheel-field">
-          <label>LR</label>
+          <label>BL</label>
           <input type="number" step="0.01" min="0"
             data-target="state"
-            data-prop="dragFactorLR"
-            value="${s.dragFactorLR ?? 0}" />
+            data-prop="dragFactorBL"
+            value="${s.dragFactorBL ?? 0}" />
         </div>
 
         <div class="vehicle-rear-label">Rear</div>
 
         <div class="field wheel-field">
-          <label>RR</label>
+          <label>BR</label>
           <input type="number" step="0.01" min="0"
             data-target="state"
-            data-prop="dragFactorRR"
-            value="${s.dragFactorRR ?? 0}" />
+            data-prop="dragFactorBR"
+            value="${s.dragFactorBR ?? 0}" />
         </div>
       </div>
     </div>
@@ -1630,10 +1630,10 @@
         headingDeg: last.headingDeg,
         trajectoryDeg: last.trajectoryDeg,
         speedMph: last.speedMph,
-        dragFactorLF: last.dragFactorLF,
-        dragFactorRF: last.dragFactorRF,
-        dragFactorLR: last.dragFactorLR,
-        dragFactorRR: last.dragFactorRR,
+        dragFactorFL: last.dragFactorFL,
+        dragFactorFR: last.dragFactorFR,
+        dragFactorBL: last.dragFactorBL,
+        dragFactorBR: last.dragFactorBR,
         massLb: last.massLb
       } : {};
       const s = new VehicleState(vehicle, { ...base, ...options });
