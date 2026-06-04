@@ -386,6 +386,10 @@
             </div>
             ${renderCalculatedOutputs(event)}
             -->
+            <div class="field">
+              <label>Calculate & Apply Skid-to-Stop to Upstream/Downstream States</label>
+            </div>
+            <button class="calc-button" id="skidStopCalculateBtn" onclick="calculateSkidStop()">Calculate</button>
           `;
         },
         calculate({ event, from, to }) {
@@ -579,9 +583,33 @@
       return result;
     }
 
-    function calculateVehicle() {
-      // Get the selected vehicle and log start of calc
-      const vehicle = state.vehicles.find(v => v.id === state.selectedVehicleId);
+    function calculateSkidStop(event = null) {
+      if (event == null) {
+        // Logic for finding event, none provided
+        event = state.events.find(e => e.id === state.selectedEventId);
+      }
+      
+      log('---------------------------------------------');
+      log('Start ' + event.label + ' calculations.');
+      log('---------------------------------------------');
+
+      // Set downstream vehicle speed to zero (i.e. skid to stop)
+      downstreamState = findState(event.toStateId);
+      const vehicle = findVehicle(downstreamState.vehicleId);
+      downstreamState.speedMph = 0;
+      log(`Setting downstream vehicle state (${vehicle.label}, ${downstreamState.stateLabel}) to 0 mph (i.e. skid-to-stop).`)
+
+      // Set upstream vehicle speed from skid calculation
+      upstreamState = findState(event.fromStateId);
+      // TODO static and/or dyanmic drag factors - probably need a separate helper function, oh angle drag factor too ha
+    }
+
+
+    function calculateVehicle(vehicle = null) {
+      // Get the selected vehicle if not provided and log start of calc
+      if (vehicle == null) {
+        vehicle = state.vehicles.find(v => v.id === state.selectedVehicleId);
+      }
       log('---------------------------------------------');
       log('Start ' + vehicle.label + ' calculations.');
       log('---------------------------------------------');
@@ -661,7 +689,6 @@
         log("Lz is indeterminate, missing requirements: " + missingReqs, 'warn');
       }
 
-  
       // Log end of calc and update inspector
       log('---------------------------------------------');
       log('End ' + vehicle.label + ' calculations.');
@@ -1180,7 +1207,7 @@
           <input type="number" step="1" data-target="vehicle" data-prop="lz" value="${vehicle.lz}" />
         </div>
         <div class="field">
-            <label>Calculate Blanks / Integrity Check</label>
+            <label>Calculate Green Fields</label>
         </div>
         <button class="calc-button" id="vehicleCalculateBtn" onclick="calculateVehicle()">Calculate</button>
       `;
@@ -1219,7 +1246,7 @@
 
     <div class="row">
       <div class="field">
-        <label>Speed, mph</label>
+        <label>Speed (mph)</label>
         <input type="number" step="0.1" data-target="state" data-prop="speedMph" value="${s.speedMph}" />
       </div>
     </div>
@@ -1365,11 +1392,11 @@
         -->
         <!-- ${renderEventGeometrySummary(event)} -->
         ${eventDef.renderFields(event)}
+        <!--
         <div class="field">
           <label>Notes</label>
           <textarea rows="4" data-target="event" data-prop="notes">${escapeHtml(event.notes)}</textarea>
         </div>
-        <!--
         <div class="inline-actions">
           <button data-action="calculate-event">Calculate Event</button>
           <button data-action="clear-event-calcs">Clear Calculations</button>
