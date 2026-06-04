@@ -295,6 +295,25 @@
   padding: 0 4px;
 }
 
+.vehicle-nav-group {
+  margin-bottom: 14px;
+}
+
+.vehicle-pill {
+  margin-bottom: 6px;
+}
+
+.state-list {
+  margin-left: 18px;
+  padding-left: 10px;
+  border-left: 2px solid #334155;
+}
+
+.state-pill {
+  margin-bottom: 6px;
+  font-size: 0.95em;
+}
+
 
 </style>
 </head>
@@ -636,7 +655,7 @@
         width = 6,
         headingDeg = 0,
         trajectoryDeg = 0,
-        speedMph = 0,
+        speedMph = null,
         massLb = 4000,
         dragFactorFL = 0.7,
         dragFactorFR = 0.7,
@@ -866,18 +885,24 @@
         if (event.eventType == 'skidToStop') {
           // Skid to stop equation
           log(`S<sub>${upstreamState.stateLabel}</sub> = √(30d(f±G)) = √(30(${distance})(${dragFactor['fLongf']} ${gradeSymbol} ${grade}))`);
-          speed = Math.sqrt(30*distance*(dragFactor['fLongf']+grade))
+          speed = Math.sqrt(30*distance*(dragFactor['fLongf']+grade));
           upstreamState.speedMph = round(speed, 2);
           log(`S<sub>${upstreamState.stateLabel}</sub> = ${upstreamState.speedMph} mph`, 'result');
         }
         else
         {
           // Continuing motion equation
+          log(`S<sub>${upstreamState.stateLabel}</sub> = √(S<sub>${downstreamState.stateLabel}</sub><sup>2</sup> + 30d(f±G)) = √(${downstreamState.speedMph}<sup>2</sup> + 30(${distance})(${dragFactor['fLongf']} ${gradeSymbol} ${grade}))`);
+          speed = Math.sqrt(downstreamState.speedMph**2 + 30*distance*(dragFactor['fLongf']+grade));
+          upstreamState.speedMph = round(speed, 2);
+          log(`S<sub>${upstreamState.stateLabel}</sub> = ${upstreamState.speedMph} mph`, 'result');
         }
       }
       else {
         // Side skid
       }
+
+      draw();
       
     }
 
@@ -1256,7 +1281,7 @@
       ctx.font = '12px system-ui';
       ctx.textAlign = 'center';
       ctx.fillText(`${vehicle.label} / ${s.stateLabel}`, 0, -widthPx / 2 - 14);
-      if (s.speedMph) ctx.fillText(`${s.speedMph} mph`, 0, widthPx / 2 + 22);
+      if (s.speedMph != null) ctx.fillText(`${s.speedMph} mph`, 0, widthPx / 2 + 22);
 
       ctx.restore();
     }
@@ -1355,40 +1380,43 @@
     }
 
     function renderVehicleNavigator() {
-      const vehiclesHtml = state.vehicles.map(vehicle => `
-        <div class="pill ${vehicle.id === state.selectedVehicleId && !state.selectedStateId && !state.selectedEventId ? 'active' : ''}" data-select-vehicle="${vehicle.id}">
-          <span>${escapeHtml(vehicle.label)}</span>
-          <small>${vehicle.states.length} state${vehicle.states.length === 1 ? '' : 's'}</small>
-        </div>
-        <div class="state-list">
-          ${vehicle.states.map(s => `
-            <div class="pill ${s.id === state.selectedStateId ? 'active' : ''}" data-select-state="${vehicle.id}|${s.id}">
-              <span>${escapeHtml(s.stateLabel)}</span>
-              <small>${Number(s.speedMph || 0)} mph</small>
-            </div>
-          `).join('')}
-        </div>
-      `).join('');
+  const vehiclesHtml = state.vehicles.map(vehicle => `
+    <div class="vehicle-nav-group">
+      <div class="pill vehicle-pill ${vehicle.id === state.selectedVehicleId && !state.selectedStateId && !state.selectedEventId ? 'active' : ''}" data-select-vehicle="${vehicle.id}">
+        <span>${escapeHtml(vehicle.label)}</span>
+        <small>${vehicle.states.length} state${vehicle.states.length === 1 ? '' : 's'}</small>
+      </div>
 
-      const eventsHtml = state.events.map(e => {
-        const def = getEventDefinition(e.eventType);
-        return `
-          <div class="pill ${e.id === state.selectedEventId ? 'active' : ''}" data-select-event="${e.id}">
-            <span>${escapeHtml(e.label)}</span>
-            <small>${escapeHtml(def.label)}</small>
+      <div class="state-list">
+        ${vehicle.states.map(s => `
+          <div class="pill state-pill ${s.id === state.selectedStateId ? 'active' : ''}" data-select-state="${vehicle.id}|${s.id}">
+            <span>${escapeHtml(s.stateLabel)}</span>
+            <small>${Number(s.speedMph || 0)} mph</small>
           </div>
-        `;
-      }).join('');
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
 
-      return `
-        <h3>Vehicles & States</h3>
-        <div class="entity-list">${vehiclesHtml || '<div class="muted">No vehicles yet.</div>'}</div>
-        <h3>Events</h3>
-        <div class="event-list">${eventsHtml || '<div class="muted">No events yet.</div>'}</div>
-        <br>
-        <hr>
-      `;
-    }
+  const eventsHtml = state.events.map(e => {
+    const def = getEventDefinition(e.eventType);
+    return `
+      <div class="pill ${e.id === state.selectedEventId ? 'active' : ''}" data-select-event="${e.id}">
+        <span>${escapeHtml(e.label)}</span>
+        <small>${escapeHtml(def.label)}</small>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <h3>Vehicles & States</h3>
+    <div class="entity-list">${vehiclesHtml || '<div class="muted">No vehicles yet.</div>'}</div>
+    <h3>Events</h3>
+    <div class="event-list">${eventsHtml || '<div class="muted">No events yet.</div>'}</div>
+    <br>
+    <hr>
+  `;
+}
 
     function renderVehicleInspector(vehicle) {
       return `
