@@ -623,13 +623,21 @@
 
       log(`Calculating f<sub>Long Static</sub> for ${vehicle.label} at ${vehState.stateLabel}:`)
       
-      // Get weight on each wheel
+      let fail = false;
       if (vehicle.weight == null) {
-        log(`Weight for ${vehicle.label} has not been specified. Static Drag Factor cannot be determined.`, 'error');
-        return 'fail';
+        log(`Weight for ${vehicle.label} has not been specified.`, 'error');
+        fail = true;
       }
       if (vehicle.weightRatioFront == null) {
-        log(`Weight Ratio for ${vehicle.label} has not been specified. Static Drag Factor cannot be determined.`, 'error');
+        log(`Weight Ratio for ${vehicle.label} has not been specified.`, 'error');
+        fail = true;
+      }
+      if (vehState.dragFactorFR == null || vehState.dragFactorFL == null || vehState.dragFactorBR == null || vehState.dragFactorBL == null) {
+        log(`Complete set of wheel drag factors for ${vehicle.label} ${vehState.stateLabel} has not been specified.`, 'error');
+        fail = true;
+      }
+      if (fail) {
+        log(`Static Drag Factor cannot be determined.`, 'error');
         return 'fail';
       }
       
@@ -646,10 +654,60 @@
       log(`f<sub>Long Static</sub> = ${staticDragFactor}`);
     }
 
+    function calculateDynamicDragFactor(vehState) {
+      const vehicle = findVehicle(vehState.vehicleId);
+
+      let fail = false;
+      if (vehicle.weight == null) {
+        log(`Weight for ${vehicle.label} has not been specified.`, 'error');
+        fail = true;
+      }
+      if (vehicle.weightRatioFront == null) {
+        log(`Weight Ratio for ${vehicle.label} has not been specified.`, 'error');
+        fail = true;
+      }
+      if (vehicle.wheelbase == null) {
+        log(`Wheelbase l<sub>wb</sub> for ${vehicle.label} has not been specified.`, 'error');
+        fail = true;
+      }
+      if (vehState.dragFactorFR == null || vehState.dragFactorFL == null || vehState.dragFactorBR == null || vehState.dragFactorBL == null) {
+        log(`Complete set of wheel drag factors for ${vehicle.label} ${vehState.stateLabel} has not been specified.`, 'error');
+        fail = true;
+      }
+      if (vehicle.lxf == null) {
+        log(`l<sub>xf</sub> for ${vehicle.label} has not been specified.`, 'error');
+        fail = true;
+      }
+      if (vehicle.lxr == null) {
+        log(`l<sub>xr</sub> for ${vehicle.label} has not been specified.`, 'error');
+        fail = true;
+      }
+      if (vehicle.lz == null) {
+        log(`l<sub>z</sub> for ${vehicle.label} has not been specified.`, 'error');
+        fail = true;
+      }
+      if (fail) {
+        log(`Dynamic Drag Factor cannot be determined.`, 'error');
+        return 'fail';
+      }
+
+      const Ff = (vehState.dragFactorFR + vehState.dragFactorFL) / 2;
+      log(`Calculating f<sub>Long<sub>f</sub></sub> for ${vehicle.label} at ${vehState.stateLabel}:`)
+      log(`f<sub>f</sub> = ${frac('f<sub>FR</sub> + f<sub>FL</sub>', '2')} = ${frac(`${vehState.dragFactorFR} + ${vehState.dragFactorFL}`, '2')} = ${Ff}`);
+      
+      const Fr = (vehState.dragFactorBR + vehState.dragFactorBL) / 2;
+      log(`f<sub>r</sub> = ${frac('f<sub>BR</sub> + f<sub>BL</sub>', '2')} = ${frac(`${vehState.dragFactorBR} + ${vehState.dragFactorBL}`, '2')} = ${Fr}`);
+
+      log(`f<sub>long<sub>f</sub></sub> = ${frac(`l<sub>wb</sub>f<sub>f</sub> - l<sub>x<sub>f</sub></sub>(f<sub>f</sub> - f<sub>r</sub>)`, `l<sub>wb</sub> - l<sub>z</sub>(f<sub>f</sub> - f<sub>r</sub>)`)}`);
+      log(`f<sub>long<sub>f</sub></sub> = ${frac(`(${vehicle.wheelbase})(${Ff}) - (${vehicle.lxf})(${Ff} - ${Fr})`, `(${vehicle.wheelbase}) - (${vehicle.lz})(${Ff} - ${Fr})`)}`);
+
+
+    }
+
 
     function calculateSkidStop(event = null) {
       if (event == null) {
-        // Logic for finding event, none provided
+        // Logic for finding event, if none provided
         event = state.events.find(e => e.id === state.selectedEventId);
       }
       
@@ -666,18 +724,32 @@
       // Set upstream vehicle speed from skid calculation
       upstreamState = findState(event.fromStateId);
 
+      let dragFactor = 0;
+
       // Figure dynamic drag factor if user wanted it
       if (event.inputs.dragFactorMode === 'dynamic')
       {
-        console.log("I'm in dynamic mode");
+        dynamicDragFactor = calculateDynamicDragFactor(upstreamState);
+        dragFactor = dynamicDragFactor;
+        if (dynamicDragFactor === 'fail') {
+          log('Dynamic Drag Factor calculation failed. Reverting to Static Drag Factor...', 'warn')
+          staticDragFactor = calculateStaticDragFactor(upstreamState);
+          if (staticDragFactor === 'fail') {
+            log(`Calculation failed.`, 'error');
+            return;
+          }
+          dragFactor = staticDragFactor;
+        }
       }
       else {
         staticDragFactor = calculateStaticDragFactor(upstreamState);
         if (staticDragFactor === 'fail') {
           log(`Calculation failed.`, 'error');
+          return;
         }
+        dragFactor = staticDragFactor;
       }
-      // TODO static and/or dyanmic drag factors - probably need a separate helper function, oh angle drag factor too ha
+      
     }
 
 
@@ -695,8 +767,8 @@
       let missingReqs = checkMissingCalcReqs(vehicle, ['rh', 'r']);
       if (missingReqs.length == 0) {
         let h = vehicle.rh - vehicle.r;
-        vehicle.h = h;
-        log("h = rh - r = " + vehicle.rh.toFixed(3) + " - " + vehicle.r.toFixed(3)); 
+        vehicle.h = round(h, 3);
+        log("h = r<sub>h</sub> - r = " + vehicle.rh.toFixed(3) + " - " + vehicle.r.toFixed(3)); 
         log("h = " + h.toFixed(3) + " ft", 'result');
       }
       else {
@@ -705,60 +777,47 @@
 
       // Calculate and log lxf
       // lxf=Wr*Lwb/w
-      log("Lxf calculation:");
+      log("L<sub>xf</sub> calculation:");
       missingReqs = checkMissingCalcReqs(vehicle, ['weight', 'weightRatioRear', 'wheelbase']);
       if (missingReqs.length == 0) {
         let lxf = ((.01*vehicle.weightRatioRear*vehicle.weight) * vehicle.wheelbase) / vehicle.weight;
-        vehicle.lxf = lxf;
+        vehicle.lxf = round(lxf, 3);
         log(
-          `Lxf = (Wr)(Lwb)/W = (.01)` +
-          `(${vehicle.weightRatioRear.toFixed(2)})` +
-          `(${vehicle.weight.toFixed(2)})` +
-          `(${vehicle.wheelbase.toFixed(2)})` +
-          `/${vehicle.weight.toFixed(2)}`
+          `L<sub>xf</sub> = ${frac(`w<sub>r</sub>l<sub>wb</sub>`,`w`)} = ` +
+          `${frac(`(${vehicle.weightRatioRear.toFixed(2)/100})(${vehicle.weight.toFixed(2)})(${vehicle.wheelbase.toFixed(2)})`, `${vehicle.weight.toFixed(2)}`)}`
         );
-        log("Lxf = " + lxf.toFixed(3) + " ft", 'result');
+        log("L<sub>xf</sub> = " + lxf.toFixed(3) + " ft", 'result');
       }
       else {
-        log("Lxf is indeterminate, missing requirements: " + missingReqs, 'warn');
+        log("L<sub>xf</sub> is indeterminate, missing requirements: " + missingReqs, 'warn');
       }
 
       // Calculate and log lxr
       // lxr=Wf*Lwb/w
-      log("Lxr calculation:");
+      log("L<sub>xr</sub> calculation:");
       missingReqs = checkMissingCalcReqs(vehicle, ['weight', 'weightRatioFront', 'wheelbase']);
       if (missingReqs.length == 0) {
         let lxr = ((.01*vehicle.weightRatioFront*vehicle.weight) * vehicle.wheelbase) / vehicle.weight;
-        vehicle.lxr = lxr;
+        vehicle.lxr = round(lxr, 3);
         log(
-          `Lxr = (Wf)(Lwb)/W = (.01)` +
-          `(${vehicle.weightRatioFront.toFixed(2)})` +
-          `(${vehicle.weight.toFixed(2)})` +
-          `(${vehicle.wheelbase.toFixed(2)})` +
-          `/${vehicle.weight.toFixed(2)}`
-        );
-        log("Lxr = " + lxr.toFixed(3) + " ft", 'result');
+          `L<sub>xr</sub> = ${frac(`w<sub>f</sub>l<sub>wb</sub>`, 'w')} = ` +
+          `${frac(`(${vehicle.weightRatioFront.toFixed(2)})(${vehicle.weight.toFixed(2)})(${vehicle.wheelbase.toFixed(2)})`,`${vehicle.weight.toFixed(2)}`)}`);
+        log("L<sub>xr</sub> = " + lxr.toFixed(3) + " ft", 'result');
       }
       else {
-        log("Lxr is indeterminate, missing requirements: " + missingReqs, 'warn');
+        log("L<sub>xr</sub> is indeterminate, missing requirements: " + missingReqs, 'warn');
       }
 
       // Calculate and log lxz
       // lz=(Lwb*sqrt(Lwb**2-h**2)*(Wh-Wf))/(h*W)+r
-      log("Lz calculation:");
+      log("L<sub>z</sub> calculation:");
       missingReqs = checkMissingCalcReqs(vehicle, ['weight', 'weightRatioFront', 'wheelbase', 'wh', 'h', 'r']);
       if (missingReqs.length == 0) {
         let lz = (vehicle.wheelbase * Math.sqrt(vehicle.wheelbase**2 - vehicle.h**2) * (vehicle.wh - (.01*vehicle.weightRatioFront*vehicle.weight))) / (vehicle.h * vehicle.weight) + vehicle.r;
-        vehicle.lz = lz;
+        vehicle.lz = round(lz, 3);
         
-        // TODO: Make log showe lxz and not lxr
-        log('Lz = (Lwb*sqrt(Lwb**2-h**2)*(Wh-Wf))/(h*W)+r')
-        log(
-          `(${vehicle.wheelbase.toFixed(2)}*` +
-          `sqrt(${vehicle.wheelbase.toFixed(2)}**2-${vehicle.h.toFixed(2)}**2)` +
-          `*(${vehicle.wh.toFixed(2)}-(.01*${vehicle.weightRatioFront.toFixed(2)}*${vehicle.weight.toFixed(2)})))` +
-          ` / (${vehicle.h.toFixed(2)}*${vehicle.weight.toFixed(2)}) + ${vehicle.r.toFixed(2)}`
-        );
+        log(`L<sub>z</sub> = ${frac(`l<sub>wb</sub>√(l<sub>wb</sub><sup>2</sup> - h<sup>2</sup>)(w<sub>h</sub> - w<sub>f</sub>)`, `hw`)} + r`);
+        log(`L<sub>z</sub> = ${frac(`(${vehicle.wheelbase})√((${vehicle.wheelbase})<sup>2</sup> - (${vehicle.h})<sup>2</sup>)(${vehicle.wh} - ((${vehicle.weightRatioFront/100})(${vehicle.weight})))`, `(${vehicle.h})(${vehicle.weight})`)} + ${vehicle.r}`);
         log("Lz = " + lz.toFixed(3) + " ft", 'result');
       }
       else {
