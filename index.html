@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="favicon.ico">
-  <title>Crash Reconstruction Scaffold</title>
+  <title>DeadStop Crash</title>
   <style>
     :root {
       --bg: #111827;
@@ -434,6 +434,68 @@
   color: #cbd5e1;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-backdrop.hidden {
+  display: none;
+}
+
+.modal {
+  background: var(--panel);
+  color: var(--text, #e5e7eb);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  width: min(520px, 90vw);
+  max-height: 85vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+}
+
+.modal-header,
+.modal-footer {
+  padding: 12px 16px;
+  border-bottom: 1px solid #374151;
+}
+
+.modal-footer {
+  border-bottom: none;
+  border-top: 1px solid #374151;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.modal-body {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.modal-x {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
 
 
 </style>
@@ -479,6 +541,19 @@
     </aside>
 
     <section class="console" id="console"></section>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Modal Title</h2>
+        <button class="modal-x" onclick="closeModal()">×</button>
+      </div>
+
+      <div id="modalBody" class="modal-body"></div>
+
+      <div id="modalFooter" class="modal-footer"></div>
+    </div>
   </div>
 
   <script>
@@ -2193,7 +2268,7 @@ function drawArrow(x1, y1, x2, y2) {
         );
       }
       let to = vehicle.states[vehicle.states.indexOf(from) + 1];
-      if (!to) to = addState(vehicle.id, { x: from.x + 20, y: from.y, speedMph: 0 });
+      if (!to) to = addState(vehicle.id, { x: from.x + 30, y: from.y, speedMph: 0 });
       const event = new EventLink({ vehicleId: vehicle.id, fromStateId: from.id, toStateId: to.id, eventType: 'skidToStop' });
       state.events.push(event);
       selectEvent(event.id);
@@ -2471,7 +2546,51 @@ canvas.addEventListener('pointerdown', event => {
       draw
     };
 
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modalFooter = document.getElementById('modalFooter');
+
+    function openModal({ title = '', body = '', buttons = [] } = {}) {
+      modalTitle.textContent = title;
+      modalBody.innerHTML = body;
+
+      modalFooter.innerHTML = '';
+
+      buttons.forEach(btn => {
+        const button = document.createElement('button');
+        button.textContent = btn.label;
+        button.className = btn.className || '';
+
+        button.onclick = () => {
+          if (btn.onclick) btn.onclick();
+          if (btn.close !== false) closeModal();
+        };
+
+        modalFooter.appendChild(button);
+      });
+
+      modalBackdrop.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      modalBackdrop.classList.add('hidden');
+    }
+
     resizeCanvas();
+/*
+    window.addEventListener('load', () => {
+      openModal({
+        title: 'Welcome',
+        body: `
+          <p>Welcome to the Crash Reconstruction Scaffold. </p>
+          <p>Select or add a vehicle state to begin.</p>
+        `,
+        buttons: [
+        { label: 'OK', className: 'calc-button' }
+        ]
+      });
+    }); */
 
     log(`Load complete. Click "Add Vehicle" to get started. Specify at a minimum the vehicle total weight and weight ratio to enable calculations.`);
 
