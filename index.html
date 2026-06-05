@@ -183,17 +183,12 @@
       cursor: pointer;
       text-align: left;
     }
-/*
-    .pill.active {
-      border-color: var(--accent);
-      background: #1e3a5f;
-    } */
 
-    .pill.active {
-  background: #2563eb;
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 1px #93c5fd;
-}
+  .pill.active {
+    background: #2563eb;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 1px #93c5fd;
+  }
 
     .pill small { color: var(--muted); }
 
@@ -465,9 +460,6 @@
       <div class="toolbar">
         <button id="addVehicleBtn">Add Vehicle</button>
         <button id="addEventBtn">Add Event</button>
-        <!-- <button id="calculateBtn">Calculate Selected Event</button> -->
-        <!-- <button id="togglePathsBtn">Hide Paths</button> -->
-        <!--<button id="duplicateStateBtn">Duplicate State</button> -->
         <button id="deleteBtn" class="danger">Delete Selected</button>
         <button id="resetViewBtn">Reset View</button>
         <button id="clearConsoleBtn" onclick="clearConsole()">Clear Console</button>
@@ -597,23 +589,6 @@
             </div>
             <button class="calc-button" id="skidStopCalculateBtn" onclick="calculateSkid()">Calculate</button>
           `;
-        },
-        calculate({ event, from, to }) {
-          ensureEventInputs(event);
-          const distanceFt = distanceBetweenStates(from, to);
-
-          // Placeholder formula shell. Replace with your verified reconstruction logic.
-          // Common simple skid form is around V = sqrt(30 * d * f * efficiency), with grade handling varying by convention.
-          const effectiveDrag = Number(event.inputs.dragFactor || 0) * Number(event.inputs.brakingEfficiency || 1);
-          const gradeAsDrag = Number(event.inputs.gradePercent || 0) / 100;
-          const speedMph = Math.sqrt(Math.max(0, 30 * distanceFt * (effectiveDrag + gradeAsDrag)));
-
-          event.calculated = {
-            distanceFt: round(distanceFt, 2),
-            effectiveDrag: round(effectiveDrag, 3),
-            placeholderSpeedMph: round(speedMph, 1)
-          };
-          return event.calculated;
         }
       },
       skidContinuedMotion: {
@@ -676,23 +651,6 @@
             </div>
             <button class="calc-button" id="skidStopCalculateBtn" onclick="calculateSkid()">Calculate</button>
           `;
-        },
-        calculate({ event, from, to }) {
-          ensureEventInputs(event);
-          const distanceFt = distanceBetweenStates(from, to);
-
-          // Placeholder formula shell. Replace with your verified reconstruction logic.
-          // Common simple skid form is around V = sqrt(30 * d * f * efficiency), with grade handling varying by convention.
-          const effectiveDrag = Number(event.inputs.dragFactor || 0) * Number(event.inputs.brakingEfficiency || 1);
-          const gradeAsDrag = Number(event.inputs.gradePercent || 0) / 100;
-          const speedMph = Math.sqrt(Math.max(0, 30 * distanceFt * (effectiveDrag + gradeAsDrag)));
-
-          event.calculated = {
-            distanceFt: round(distanceFt, 2),
-            effectiveDrag: round(effectiveDrag, 3),
-            placeholderSpeedMph: round(speedMph, 1)
-          };
-          return event.calculated;
         }
       }/*,
 
@@ -1540,22 +1498,6 @@ function drawArrow(x1, y1, x2, y2) {
   ctx.fill();
 }
 
-/*
-    function drawArrow(x1, y1, x2, y2) {
-      const angle = Math.atan2(y2 - y1, x2 - x1);
-      const headLength = 10;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x2, y2);
-      ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
-      ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
-      ctx.closePath();
-      ctx.fill();
-    } */
-
     // Helper function for drawVehicleState() to draw CoG
     function getCogLocalX(vehicle, lengthPx) {
       const rearAxleX = -lengthPx * 0.25;
@@ -1971,51 +1913,6 @@ function drawArrow(x1, y1, x2, y2) {
   `;
 }
 
-
-    /*
-    function renderStateInspector(vehicle, s) {
-      return `
-        <h3>State Snapshot</h3>
-        <div class="field">
-          <label>State label</label>
-          <input data-target="state" data-prop="stateLabel" value="${escapeHtml(s.stateLabel)}" />
-        </div>
-        <div class="row">
-          <div class="field">
-            <label>X Position (ft)</label>
-            <input type="number" step="0.1" data-target="state" data-prop="x" value="${s.x.toFixed(1)}" />
-          </div>
-          <div class="field">
-            <label>Y Position (ft)</label>
-            <input type="number" step="0.1" data-target="state" data-prop="y" value="${s.y.toFixed(1)}" />
-          </div>
-        </div>
-        <div class="row">
-          <div class="field">
-            <label>Heading (Deg)</label>
-            <input type="number" step="1" data-target="state" data-prop="headingDeg" value="${s.headingDeg.toFixed(0)}" />
-          </div>
-          <div class="field">
-            <label>Trajectory (Deg)</label>
-            <input type="number" step="0.1" data-target="state" data-prop="trajectoryDeg" value="${s.trajectoryDeg.toFixed(0)}" />
-          </div>
-        </div>
-        <div class="row">
-          <div class="field">
-            <label>Speed, mph</label>
-            <input type="number" step="0.1" data-target="state" data-prop="speedMph" value="${s.speedMph}" />
-          </div>
-        </div>
-        <div class="field">
-          <label>Notes</label>
-          <textarea rows="4" data-target="state" data-prop="notes">${escapeHtml(s.notes)}</textarea>
-        </div>
-
-      `;
-    }
-
-    */
-
     function renderEventInspector(event) {
       ensureEventInputs(event);
       const vehicle = findVehicle(event.vehicleId);
@@ -2370,8 +2267,6 @@ function drawArrow(x1, y1, x2, y2) {
     function radToDeg(rad) { return rad * 180 / Math.PI; }
 
 
-/// event select work
-
 function distancePointToSegment(px, py, x1, y1, x2, y2) {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -2455,33 +2350,6 @@ canvas.addEventListener('pointerdown', event => {
     clearSelection();
   }
 });
-/*
-    canvas.addEventListener('pointerdown', event => {
-      canvas.setPointerCapture(event.pointerId);
-      const world = screenToWorld(event.clientX, event.clientY);
-      const hit = hitTestVehicleState(world);
-
-      if (event.button === 1 || event.button === 2) {
-        state.interaction = {
-          mode: 'pan',
-          pointerStart: { x: event.clientX, y: event.clientY },
-          cameraStart: { ...state.camera }
-        };
-        return;
-      }
-
-      if (hit) {
-        selectState(hit.vehicle.id, hit.vehicleState.id);
-        state.interaction = {
-          mode: event.shiftKey ? 'rotateState' : 'dragState',
-          pointerStart: world,
-          stateStart: { x: hit.vehicleState.x, y: hit.vehicleState.y, headingDeg: hit.vehicleState.headingDeg }
-        };
-      } else {
-        clearSelection();
-      }
-    });
-    */
 
     canvas.addEventListener('pointermove', event => {
       const interaction = state.interaction;
@@ -2530,7 +2398,6 @@ canvas.addEventListener('pointerdown', event => {
       if (state.interaction.mode === 'dragState' || state.interaction.mode === 'rotateState') {
         const s = getSelectedState();
         const v = getSelectedVehicle();
-        //if (s && v) log(`Updated ${v.label} / ${s.stateLabel}: x=${s.x.toFixed(1)}, y=${s.y.toFixed(1)}, heading=${s.headingDeg.toFixed(0)}°.`);
       }
       state.interaction = { mode: null, pointerStart: null, stateStart: null, cameraStart: null };
     });
@@ -2545,17 +2412,9 @@ canvas.addEventListener('pointerdown', event => {
     }, { passive: false });
 
     document.getElementById('addVehicleBtn').addEventListener('click', addVehicle);
-    //document.getElementById('addStateBtn').addEventListener('click', addStateToSelectedVehicle);
     document.getElementById('addEventBtn').addEventListener('click', addEvent);
-    //document.getElementById('calculateBtn').addEventListener('click', calculateSelectedEvent);
-    //document.getElementById('duplicateStateBtn').addEventListener('click', duplicateSelectedState);
     document.getElementById('deleteBtn').addEventListener('click', deleteSelected);
     document.getElementById('resetViewBtn').addEventListener('click', resetView);
-    //document.getElementById('togglePathsBtn').addEventListener('click', event => {
-    //  state.showPaths = !state.showPaths;
-    //  event.target.textContent = state.showPaths ? 'Hide Paths' : 'Show Paths';
-    //  draw();
-    //});
 
     window.addEventListener('resize', resizeCanvas);
 
@@ -2613,21 +2472,9 @@ canvas.addEventListener('pointerdown', event => {
     };
 
     resizeCanvas();
-/*
-    // Demo setup.
-    const v1 = addVehicle();
-    v1.label = 'Vehicle 1';
-    v1.states[0].stateLabel = 'Position 1';
-    v1.states[0].speedMph = 45;
-    v1.states[0].headingDeg = 0;
 
-    const v1s2 = addState(v1.id, { x: 36, y: 0, headingDeg: 0, speedMph: 0, stateLabel: 'Position 2', timeLabel: 'final rest' });
-    state.events.push(new EventLink({ vehicleId: v1.id, fromStateId: v1.states[0].id, toStateId: v1s2.id, eventType: 'skidToStop', label: 'Skid Event' }));
-
-    selectEvent(state.events[0].id); */
     log(`Load complete. Click "Add Vehicle" to get started. Specify at a minimum the vehicle total weight and weight ratio to enable calculations.`);
-    //log('Try selecting Skid Event or Yaw Event; the inspector fields change by event type.');
-    //log('Use window.crashScene in DevTools for experiments/export.');
+
   </script>
 </body>
 </html>
