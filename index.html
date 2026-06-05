@@ -923,7 +923,7 @@
         this.length = 16;
         this.width = 6;
         this.height = null;
-        this.weight = 4000;
+        this.weight = 5300;
         this.wheelbase = null;
         this.weightRatioFront = 60;
         this.weightRatioRear = 40;
@@ -1296,7 +1296,7 @@
 
       // Calculate and log lxf
       // lxf=Wr*Lwb/w
-      log("L<sub>xf</sub> calculation:");
+      log("l<sub>xf</sub> calculation:");
       missingReqs = checkMissingCalcReqs(vehicle, ['weight', 'weightRatioRear', 'wheelbase']);
       if (missingReqs.length == 0) {
         let lxf = ((.01*vehicle.weightRatioRear*vehicle.weight) * vehicle.wheelbase) / vehicle.weight;
@@ -1305,42 +1305,50 @@
           `L<sub>xf</sub> = ${frac(`w<sub>r</sub>l<sub>wb</sub>`,`w`)} = ` +
           `${frac(`(${vehicle.weightRatioRear.toFixed(2)/100})(${vehicle.weight.toFixed(2)})(${vehicle.wheelbase.toFixed(2)})`, `${vehicle.weight.toFixed(2)}`)}`
         );
-        log("L<sub>xf</sub> = " + lxf.toFixed(3) + " ft", 'result');
+        log("l<sub>xf</sub> = " + lxf.toFixed(3) + " ft", 'result');
       }
       else {
-        log("L<sub>xf</sub> is indeterminate, missing requirements: " + missingReqs, 'warn');
+        log("l<sub>xf</sub> is indeterminate, missing requirements: " + missingReqs, 'warn');
       }
 
       // Calculate and log lxr
       // lxr=Wf*Lwb/w
-      log("L<sub>xr</sub> calculation:");
+      log("l<sub>xr</sub> calculation:");
       missingReqs = checkMissingCalcReqs(vehicle, ['weight', 'weightRatioFront', 'wheelbase']);
       if (missingReqs.length == 0) {
         let lxr = ((.01*vehicle.weightRatioFront*vehicle.weight) * vehicle.wheelbase) / vehicle.weight;
         vehicle.lxr = round(lxr, 3);
         log(
-          `L<sub>xr</sub> = ${frac(`w<sub>f</sub>l<sub>wb</sub>`, 'w')} = ` +
+          `l<sub>xr</sub> = ${frac(`w<sub>f</sub>l<sub>wb</sub>`, 'w')} = ` +
           `${frac(`(${vehicle.weightRatioFront.toFixed(2)})(${vehicle.weight.toFixed(2)})(${vehicle.wheelbase.toFixed(2)})`,`${vehicle.weight.toFixed(2)}`)}`);
-        log("L<sub>xr</sub> = " + lxr.toFixed(3) + " ft", 'result');
+        log("l<sub>xr</sub> = " + lxr.toFixed(3) + " ft", 'result');
       }
       else {
-        log("L<sub>xr</sub> is indeterminate, missing requirements: " + missingReqs, 'warn');
+        log("l<sub>xr</sub> is indeterminate, missing requirements: " + missingReqs, 'warn');
       }
 
       // Calculate and log lxz
       // lz=(Lwb*sqrt(Lwb**2-h**2)*(Wh-Wf))/(h*W)+r
-      log("L<sub>z</sub> calculation:");
+      log("l<sub>z</sub> calculation:");
       missingReqs = checkMissingCalcReqs(vehicle, ['weight', 'weightRatioFront', 'wheelbase', 'wh', 'h', 'r']);
       if (missingReqs.length == 0) {
         let lz = (vehicle.wheelbase * Math.sqrt(vehicle.wheelbase**2 - vehicle.h**2) * (vehicle.wh - (.01*vehicle.weightRatioFront*vehicle.weight))) / (vehicle.h * vehicle.weight) + vehicle.r;
         vehicle.lz = round(lz, 3);
         
-        log(`L<sub>z</sub> = ${frac(`l<sub>wb</sub>√(l<sub>wb</sub><sup>2</sup> - h<sup>2</sup>)(w<sub>h</sub> - w<sub>f</sub>)`, `hw`)} + r`);
-        log(`L<sub>z</sub> = ${frac(`(${vehicle.wheelbase})√((${vehicle.wheelbase})<sup>2</sup> - (${vehicle.h})<sup>2</sup>)(${vehicle.wh} - ((${vehicle.weightRatioFront/100})(${vehicle.weight})))`, `(${vehicle.h})(${vehicle.weight})`)} + ${vehicle.r}`);
-        log("Lz = " + lz.toFixed(3) + " ft", 'result');
+        log(`l<sub>z</sub> = ${frac(`l<sub>wb</sub>√(l<sub>wb</sub><sup>2</sup> - h<sup>2</sup>)(w<sub>h</sub> - w<sub>f</sub>)`, `hw`)} + r`);
+        log(`l<sub>z</sub> = ${frac(`(${vehicle.wheelbase})√((${vehicle.wheelbase})<sup>2</sup> - (${vehicle.h})<sup>2</sup>)(${vehicle.wh} - ((${vehicle.weightRatioFront/100})(${vehicle.weight})))`, `(${vehicle.h})(${vehicle.weight})`)} + ${vehicle.r}`);
+        log("l<sub>z</sub> = " + lz.toFixed(3) + " ft", 'result');
       }
       else {
-        log("Lz is indeterminate, missing requirements: " + missingReqs, 'warn');
+        log("l<sub>z</sub> is indeterminate, missing requirements: " + missingReqs + ". Checking for specified height...", 'warn');
+        if (vehicle.height != null) {
+          log(`l<sub>z</sub> ≈ ${frac('h<sub>vehicle</sub>', '3')} = ${frac(`${vehicle.height}`,'3')}`);
+          vehicle.lz = round(vehicle.height / 3, 3);
+          log(`l<sub>z</sub> ≈ ${vehicle.lz} ft`, 'result');
+        }
+        else {
+          log("Vehicle height not specified. l<sub>z</sub> is indeterminate.", 'warn');
+        }
       }
 
       // Log end of calc and update inspector
