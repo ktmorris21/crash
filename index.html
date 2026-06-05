@@ -497,6 +497,44 @@
   cursor: pointer;
 }
 
+.axis-widget {
+  position: absolute;
+  right: 12px;
+  bottom: 40px; /* clear the status bar */
+
+  z-index: 5;
+  padding: 8px 10px;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #cbd5e1;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.axis-title {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.axis-row {
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.x-axis {
+  color: #38bdf8;
+}
+
+.y-axis {
+  color: #22c55e;
+}
+
+.angle-axis {
+  color: #facc15;
+}
+
 
 </style>
 </head>
@@ -526,6 +564,12 @@
         <button id="resetViewBtn">Reset View</button>
         <button id="clearConsoleBtn" onclick="clearConsole()">Clear Console</button>
         <button id="calculateAllBtn" class="calc-button" onclick="calculateAll()">Calculate All</button>
+      </div>
+      <div class="axis-widget">
+        <div class="axis-title">Scene Axes</div>
+        <div class="axis-row x-axis">← +X</div>
+        <div class="axis-row y-axis">↓ +Y</div>
+        <div class="axis-row angle-axis">↻ +θ</div>
       </div>
       <canvas id="scene"></canvas>
     </section>
