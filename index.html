@@ -499,8 +499,8 @@
 
 .axis-widget {
   position: absolute;
-  right: 18px;
-  bottom: 18px;
+  right: 30px; /* Controls the position of the overall widget */
+  bottom: 30px; /* Controls the position of the overall widget */
 
   width: 82px;
   height: 82px;
@@ -525,7 +525,7 @@
   position: absolute;
   left: 28px;
   top: 37px;
-  width: 30px;
+  width: 40px; /* This is the length of the blue x-axis line */
   height: 2px;
   background: #38bdf8;
 }
@@ -535,13 +535,13 @@
   left: 25px;
   top: 40px;
   width: 2px;
-  height: 28px;
+  height: 40px;
   background: #22c55e;
 }
 
 .axis-x-arrow {
   position: absolute;
-  left: 54px;
+  left: 64px; /* Blue x-axis arrow. Move this by any change made to x-axis length */
   top: 28px;
   color: #38bdf8;
   font-size: 15px;
@@ -550,15 +550,15 @@
 .axis-y-arrow {
   position: absolute;
   left: 19px;
-  top: 62px;
+  top: 74px;
   color: #22c55e;
   font-size: 15px;
 }
 
 .axis-theta {
   position: absolute;
-  left: 34px;
-  top: 14px;
+  left: 29px;
+  top: 44px;
 
   color: #facc15;
   font-size: 18px;
@@ -566,8 +566,8 @@
 
 .axis-label-x {
   position: absolute;
-  left: 58px;
-  top: 42px;
+  left: 68px; /* Repositions X label */
+  top: 44px; /* Repositions X label */
   color: #38bdf8;
   font-size: 12px;
   font-weight: 700;
@@ -576,7 +576,7 @@
 .axis-label-y {
   position: absolute;
   left: 33px;
-  top: 62px;
+  top: 78px;
   color: #22c55e;
   font-size: 12px;
   font-weight: 700;
@@ -584,8 +584,8 @@
 
 .axis-label-theta {
   position: absolute;
-  left: 50px;
-  top: 17px;
+  left: 42px;
+  top: 49px;
 
   color: #facc15;
   font-size: 11px;
