@@ -181,11 +181,17 @@
       cursor: pointer;
       text-align: left;
     }
-
+/*
     .pill.active {
       border-color: var(--accent);
       background: #1e3a5f;
-    }
+    } */
+
+    .pill.active {
+  background: #2563eb;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 1px #93c5fd;
+}
 
     .pill small { color: var(--muted); }
 
@@ -326,7 +332,7 @@
   padding: 0 16px;
 
   background: #020617;           /* nearly black */
-  border-bottom: 3px solid #22c55e; /* green accent */
+  border-bottom: 2px solid #15803d;
 }
 
 .app-header h1 {
@@ -390,16 +396,36 @@
   background: #15803d !important;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-version {
+  margin-left: auto;
+
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
 
 </style>
 </head>
 <body>
 <header class="app-header">
-  <div class="logo-wrap">
-    <img src="0carcrash.svg" class="app-logo">
+  <div class="header-left">
+    <div class="logo-wrap">
+      <img src="0carcrash.svg" class="app-logo">
+    </div>
+
+    <h1>DeadStop Crash Reconstruction</h1>
   </div>
 
-  <h1>Dead Stop</h1>
+  <div class="header-version">
+    v0.1.0
+  </div>
 </header>
 
 
@@ -1304,41 +1330,57 @@
       if (state.showPaths) drawEvents();
     }
 
-    function drawGrid(width, height) {
-      const gridFt = 10;
-      const step = gridFt * state.camera.zoom;
-      if (step < 6) return;
+function drawGrid(width, height) {
+  const gridFt = 10;
+  const majorGridFt = 50;
+  const worldPaddingFt = 100;
 
-      const topLeft = screenToWorld(0, 0);
-      const bottomRight = screenToWorld(width, height);
-      const startX = Math.floor(topLeft.x / gridFt) * gridFt;
-      const endX = Math.ceil(bottomRight.x / gridFt) * gridFt;
-      const startY = Math.floor(topLeft.y / gridFt) * gridFt;
-      const endY = Math.ceil(bottomRight.y / gridFt) * gridFt;
+  const step = gridFt * state.camera.zoom;
+  if (step < 6) return;
 
-      ctx.save();
-      ctx.strokeStyle = '#1f2a3d';
-      ctx.lineWidth = 1;
+  const topLeft = screenToWorld(0, 0);
+  const bottomRight = screenToWorld(width, height);
 
-      for (let x = startX; x <= endX; x += gridFt) {
-        const a = worldToScreen(x, startY);
-        const b = worldToScreen(x, endY);
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-      }
+  const startX = Math.floor((topLeft.x - worldPaddingFt) / gridFt) * gridFt;
+  const endX = Math.ceil((bottomRight.x + worldPaddingFt) / gridFt) * gridFt;
+  const startY = Math.floor((topLeft.y - worldPaddingFt) / gridFt) * gridFt;
+  const endY = Math.ceil((bottomRight.y + worldPaddingFt) / gridFt) * gridFt;
 
-      for (let y = startY; y <= endY; y += gridFt) {
-        const a = worldToScreen(startX, y);
-        const b = worldToScreen(endX, y);
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
+  ctx.save();
+  ctx.lineWidth = 1;
+
+  for (let x = startX; x <= endX; x += gridFt) {
+    const a = worldToScreen(x, startY);
+    const b = worldToScreen(x, endY);
+
+    ctx.strokeStyle =
+      x % majorGridFt === 0
+        ? 'rgba(56, 189, 248, 0.15)'
+        : 'rgba(56, 189, 248, 0.06)';
+
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+
+  for (let y = startY; y <= endY; y += gridFt) {
+    const a = worldToScreen(startX, y);
+    const b = worldToScreen(endX, y);
+
+    ctx.strokeStyle =
+      y % majorGridFt === 0
+        ? 'rgba(56, 189, 248, 0.15)'
+        : 'rgba(56, 189, 248, 0.06)';
+
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
 
     function drawPaths() {
       for (const vehicle of state.vehicles) {
@@ -1381,16 +1423,25 @@
         const eventDef = getEventDefinition(e.eventType);
 
         ctx.save();
-        ctx.strokeStyle = selected ? '#facc15' : vehicle.color;
-        ctx.fillStyle = selected ? '#facc15' : vehicle.color;
+
+        const normalEventColor = '#22c55e';
+        const selectedEventColor = '#facc15';
+
+        ctx.strokeStyle = selected ? selectedEventColor : normalEventColor;
+        ctx.fillStyle = selected ? selectedEventColor : normalEventColor;
         ctx.lineWidth = selected ? 4 : 2;
         ctx.globalAlpha = selected ? 1 : 0.9;
+
         drawArrow(a.x, a.y, b.x, b.y);
+
         ctx.font = '12px system-ui';
         ctx.textAlign = 'center';
+
         ctx.fillText(eventDef.label, mid.x, mid.y - 8);
-        distance = distanceBetweenStatesIds(e.fromStateId, e.toStateId).toFixed(2);
+
+        const distance = distanceBetweenStatesIds(e.fromStateId, e.toStateId).toFixed(2);
         ctx.fillText(distance + " ft", mid.x, mid.y + 16);
+
         ctx.restore();
       }
     }
