@@ -314,10 +314,95 @@
   font-size: 0.95em;
 }
 
+/* ===== Header ===== */
+
+.app-header {
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 0 16px;
+
+  background: #020617;           /* nearly black */
+  border-bottom: 3px solid #22c55e; /* green accent */
+}
+
+.app-header h1 {
+  margin: 0;
+
+  color: #f8fafc;
+  font-size: 1.25rem;
+  font-weight: 600;
+
+  letter-spacing: 0.02em;
+}
+
+/* ===== Logo ===== */
+
+.logo-wrap {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+.logo-wrap img,
+.logo-wrap svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ===== Toolbar ===== */
+
+.toolbar {
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+
+  padding: 8px;
+}
+
+/* ===== Optional Button Styling ===== */
+
+.toolbar button {
+  background: #334155;
+  border: 1px solid #475569;
+  color: #f8fafc;
+}
+
+.toolbar button:hover {
+  background: #475569;
+}
+
+/* Calculate All button */
+.calc-button {
+  background: #16a34a !important;
+  border-color: #22c55e !important;
+}
+
+.calc-button:hover {
+  background: #15803d !important;
+}
+
 
 </style>
 </head>
 <body>
+<header class="app-header">
+  <div class="logo-wrap">
+    <img src="0carcrash.svg" class="app-logo">
+  </div>
+
+  <h1>Dead Stop</h1>
+</header>
+
+
   <div class="app">
     <section class="canvas-wrap">
       <div class="toolbar">
@@ -328,7 +413,8 @@
         <!--<button id="duplicateStateBtn">Duplicate State</button> -->
         <button id="deleteBtn" class="danger">Delete Selected</button>
         <button id="resetViewBtn">Reset View</button>
-        <button id="CalculateAllBtn" class="calc-button" disabled>Calculate All</button>
+        <button id="clearConsoleBtn" onclick="clearConsole()">Clear Console</button>
+        <button id="calculateAllBtn" class="calc-button" onclick="calculateAll()">Calculate All</button>
       </div>
       <canvas id="scene"></canvas>
     </section>
@@ -346,6 +432,10 @@
     const ctx = canvas.getContext('2d');
     const consoleEl = document.getElementById('console');
     const inspectorContent = document.getElementById('inspectorContent');
+
+    function clearConsole() {
+      consoleEl.innerHTML = '';
+    }
 
     function frac(numerator, denominator) {
       return `
@@ -542,7 +632,7 @@
           };
           return event.calculated;
         }
-      },
+      }/*,
 
       yaw: {
         label: 'Yaw',
@@ -599,8 +689,8 @@
           };
           return event.calculated;
         }
-      },
-
+      }, */
+      /*
       custom: {
         label: 'Custom / Notes Only',
         defaultInputs() {
@@ -621,7 +711,7 @@
           event.calculated = { message: 'No calculation defined for custom event.' };
           return event.calculated;
         }
-      }
+      } */
     };
 
     class Vehicle {
@@ -1056,6 +1146,66 @@
       log('End ' + vehicle.label + ' calculations.');
       log('---------------------------------------------');
       renderInspector();
+    }
+
+    function getVehicleEventsBackward(vehicleId) {
+      const vehicleEvents = state.events.filter(e => e.vehicleId === vehicleId);
+
+      const eventByToStateId = new Map(
+        vehicleEvents.map(e => [e.toStateId, e])
+      );
+
+      const eventByFromStateId = new Map(
+        vehicleEvents.map(e => [e.fromStateId, e])
+      );
+
+      // End state = a toState that is never used as a fromState
+      const endEvent = vehicleEvents.find(e => !eventByFromStateId.has(e.toStateId));
+      if (!endEvent) return [];
+
+      const ordered = [];
+      let currentEvent = endEvent;
+
+      while (currentEvent) {
+        ordered.push(currentEvent);
+        currentEvent = eventByToStateId.get(currentEvent.fromStateId);
+      }
+
+      return ordered; // backwards order
+    }
+
+    function calculateAll() {
+      log('---------------------------------------------');
+      log('Start Calculate All.');
+      log('---------------------------------------------');
+      for (vehicle of state.vehicles) {
+        calculateVehicle(findVehicle(vehicle.id));
+        const vehicleEvents = getVehicleEventsBackward(vehicle.id);
+        // Make sure a chain does not have more than 1 skid to stop
+        const skidToStopEvents = vehicleEvents.filter(e => e.eventType === 'skidToStop');
+        if (skidToStopEvents.length > 1) {
+          log(`Error: Event chain on ${vehicle.label} contains more than 1 skid-to-stop event. Aborting.`, 'error');
+          log('---------------------------------------------');
+          log('End Calculate All.');
+          log('---------------------------------------------');
+          return;
+        }
+        for (event of vehicleEvents) {
+          switch (event.eventType) {
+            case 'skidToStop':
+            case 'skidContinuedMotion':
+              calculateSkid(event);
+              break;
+
+            case 'yaw':
+              calculateYaw(event);
+              break;
+          }
+        }
+      }
+      log('---------------------------------------------');
+      log('End Calculate All.');
+      log('---------------------------------------------');
     }
 
     function getEventDefinition(eventType) {
