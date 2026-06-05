@@ -1,8 +1,11 @@
+Wishlist:
 Welcome dialog
 CVS vehicle import
 Export/import program state "save/load"
 Collisions
 Kinetic energy
-+x, +y, +angle orgin/legend/symbol
 Scroll console size
 No events in chain allowed after a skid to stop
+
+Done:
++x, +y, +angle orgin/legend/symbol

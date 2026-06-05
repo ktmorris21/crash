@@ -1391,6 +1391,16 @@
           log('---------------------------------------------');
           return;
         }
+        // If there is a skid-to-stop event, it must be the final event in the chain
+        if (skidToStopEvents.length === 1) {
+          if (vehicleEvents[0].eventType != 'skidToStop') {
+            log(`Error: Event chain on ${vehicle.label} has a skid-to-stop event that is not the final event. Aborting.`, 'error');
+            log('---------------------------------------------');
+            log('End Calculate All.');
+            log('---------------------------------------------');
+            return;
+          }
+        }
         for (event of vehicleEvents) {
           switch (event.eventType) {
             case 'skidToStop':
@@ -1399,7 +1409,7 @@
               break;
 
             case 'yaw':
-              calculateYaw(event);
+              console.log(calculateYaw(event));
               break;
           }
         }
