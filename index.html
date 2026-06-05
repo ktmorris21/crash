@@ -879,9 +879,17 @@
       }
 
       // Check if there is any side skid
-      if (event.headingDeg === event.trajectoryDeg) {
+      let sideSkid = false;
+      if (upstreamState.trajectoryDeg - upstreamState.headingDeg != 0) {
+        sideSkid = true;
+      }
+      if (upstreamState.headingDeg - downstreamState.headingDeg != 0) {
+        sideSkid = true;
+      }
+
+      if (!sideSkid) {
         // No side skid
-        log('Heading and Trajectory angles match, no side skid.');
+        log('No side skid or rear skid detected between upstream and downstream states.');
         if (event.eventType == 'skidToStop') {
           // Skid to stop equation
           log(`S<sub>${upstreamState.stateLabel}</sub> = √(30d(f±G)) = √(30(${distance})(${dragFactor['fLongf']} ${gradeSymbol} ${grade}))`);
@@ -900,6 +908,72 @@
       }
       else {
         // Side skid
+        log('Side skid and/or rear leading skid detected between upstream and downstream states.');
+        // Difference of -90 to 90, use fLongf
+        // Difference of 90 to 180 or -90 to -180, use fLongr
+
+        // Upstream drag factor
+        log(`${upstreamState.stateLabel} effective drag:`)
+        let angle = upstreamState.headingDeg - upstreamState.trajectoryDeg;
+        let angleRad = angle * Math.PI / 180;
+        const fLat = event.inputs.dragFactor;
+        log(`β = Heading - Trajectory = ${upstreamState.headingDeg}° - ${upstreamState.trajectoryDeg}° = ${angle}°`);
+        if (angle >= -90 && angle <= 90) {
+          fLong = dragFactor['fLongf'];
+          log(`For -90° ≤ β ≤ 90°, f<sub>long</sub> = f<sub>long<sub>f</sub></sub> = ${fLong}`);
+        }
+        else {
+          fLong = dragFactor['fLongr'];
+          log(`For -90° > β or β > 90°, f<sub>long</sub> = f<sub>long<sub>r</sub></sub> = ${fLong}`);
+        }
+        log(`f<sub>lat</sub> = f<sub>roadway</sub> = ${fLat}`);
+        log(`f<sub>β<sub>${upstreamState.stateLabel}</sub></sub> = √((f<sub>lat</sub>sinβ)<sup>2</sup> + (f<sub>long</sub>cosβ)<sup>2</sup>)`);
+        log(`f<sub>β<sub>${upstreamState.stateLabel}</sub></sub> = √((${fLat}sin${angle}°)<sup>2</sup> + (${fLong}cos${angle}°)<sup>2</sup>)`);
+        let fBeta1 = round(Math.sqrt((fLat*Math.sin(angleRad))**2 + (fLong*Math.cos(angleRad))**2), 3);
+        log(`f<sub>β<sub>${upstreamState.stateLabel}</sub></sub> = ${fBeta1}`);
+
+        // Downstream drag factor
+        log(`${downstreamState.stateLabel} effective drag:`)
+        angle = downstreamState.headingDeg - downstreamState.trajectoryDeg;
+        angleRad = angle * Math.PI / 180;
+        log(`β = Trajectory - Heading = ${downstreamState.headingDeg}° - ${downstreamState.trajectoryDeg}° = ${angle}°`);
+        if (angle >= -90 && angle <= 90) {
+          fLong = dragFactor['fLongf'];
+          log(`For -90° ≤ β ≤ 90°, f<sub>long</sub> = f<sub>long<sub>f</sub></sub> = ${fLong}`);
+        }
+        else {
+          fLong = dragFactor['fLongr'];
+          log(`For -90° > β or β > 90°, f<sub>long</sub> = f<sub>long<sub>r</sub></sub> = ${fLong}`);
+        }
+        log(`f<sub>lat</sub> = f<sub>roadway</sub> = ${fLat}`);
+        log(`f<sub>β<sub>${downstreamState.stateLabel}</sub></sub> = √((f<sub>lat</sub>sinβ)<sup>2</sup> + (f<sub>long</sub>cosβ)<sup>2</sup>)`);
+        log(`f<sub>β<sub>${downstreamState.stateLabel}</sub></sub> = √((${fLat}sin${angle}°)<sup>2</sup> + (${fLong}cos${angle}°)<sup>2</sup>)`);
+        let fBeta2 = round(Math.sqrt((fLat*Math.sin(angleRad))**2 + (fLong*Math.cos(angleRad))**2), 3);
+        log(`f<sub>β<sub>${downstreamState.stateLabel}</sub></sub> = ${fBeta2}`);
+
+        // then avg results for use over the event
+        log(`f<sub>${event.label}</sub> = ${frac(`f<sub>${upstreamState.stateLabel}</sub> + f<sub>${downstreamState.stateLabel}</sub>`, `2`)}`);
+        log(`f<sub>${event.label}</sub> = ${frac(`${fBeta1} + ${fBeta2}`, `2`)}`);
+        fEvent = round((fBeta1 + fBeta2) / 2, 3);
+        log(`f<sub>${event.label}</sub> = ${fEvent}`);
+
+        // Now can calculate upstream speed
+        if (event.eventType == 'skidToStop') {
+          // Skid to stop equation
+          log(`S<sub>${upstreamState.stateLabel}</sub> = √(30d(f±G)) = √(30(${distance})(${fEvent} ${gradeSymbol} ${grade}))`);
+          speed = Math.sqrt(30*distance*(fEvent+grade));
+          upstreamState.speedMph = round(speed, 2);
+          log(`S<sub>${upstreamState.stateLabel}</sub> = ${upstreamState.speedMph} mph`, 'result');
+        }
+        else
+        {
+          // Continuing motion equation
+          log(`S<sub>${upstreamState.stateLabel}</sub> = √(S<sub>${downstreamState.stateLabel}</sub><sup>2</sup> + 30d(f±G)) = √(${downstreamState.speedMph}<sup>2</sup> + 30(${distance})(${fEvent} ${gradeSymbol} ${grade}))`);
+          speed = Math.sqrt(downstreamState.speedMph**2 + 30*distance*(fEvent+grade));
+          upstreamState.speedMph = round(speed, 2);
+          log(`S<sub>${upstreamState.stateLabel}</sub> = ${upstreamState.speedMph} mph`, 'result');
+        }
+
       }
 
       draw();
@@ -1773,8 +1847,18 @@
           if (target === 'state' && vehicleState) {
             vehicleState[prop] = value;
             if (prop === 'x' || prop === 'y') {
-              console.log('changed x or y'); 
-            }
+              // Update the preceeding state angle based on inspector change of x/y coordinate
+              
+              for (e of state.events) {
+                if (e.toStateId === vehicleState.id || e.fromStateId === vehicleState.id) {
+                  const currentState = findState(e.toStateId);
+                  const previousState = findState(e.fromStateId);
+                  const angleDeg = Math.round((Math.atan2(currentState.y - previousState.y, currentState.x - previousState.x) * 180 / Math.PI));
+                  currentState.trajectoryDeg = angleDeg;
+                  previousState.trajectoryDeg = angleDeg;
+                }
+              } 
+            } 
           }
 
           if (target === 'event' && event) {
@@ -2130,7 +2214,7 @@ canvas.addEventListener('pointerdown', event => {
             const currentState = findState(e.toStateId);
             const previousState = findState(e.fromStateId);
             const angleDeg = Math.round((Math.atan2(currentState.y - previousState.y, currentState.x - previousState.x) * 180 / Math.PI));
-            //currentState.trajectoryDeg = angleDeg;
+            currentState.trajectoryDeg = angleDeg;
             previousState.trajectoryDeg = angleDeg;
           }
         }
