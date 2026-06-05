@@ -499,40 +499,97 @@
 
 .axis-widget {
   position: absolute;
-  right: 12px;
-  bottom: 40px; /* clear the status bar */
+  right: 18px;
+  bottom: 18px;
 
-  z-index: 5;
-  padding: 8px 10px;
-  border: 1px solid #334155;
-  border-radius: 10px;
-  background: rgba(15, 23, 42, 0.88);
-  color: #cbd5e1;
-  font-size: 12px;
+  width: 82px;
+  height: 82px;
+
+  z-index: 1000;
   pointer-events: none;
 }
 
-.axis-title {
-  font-size: 11px;
-  color: #94a3b8;
-  margin-bottom: 4px;
+.axis-origin {
+  position: absolute;
+  left: 26px;
+  top: 38px;
+  width: 7px;
+  height: 7px;
+  border: 2px solid #e5e7eb;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
 }
 
-.axis-row {
-  font-family: monospace;
-  white-space: nowrap;
+.axis-x-line {
+  position: absolute;
+  left: 28px;
+  top: 37px;
+  width: 30px;
+  height: 2px;
+  background: #38bdf8;
 }
 
-.x-axis {
+.axis-y-line {
+  position: absolute;
+  left: 25px;
+  top: 40px;
+  width: 2px;
+  height: 28px;
+  background: #22c55e;
+}
+
+.axis-x-arrow {
+  position: absolute;
+  left: 54px;
+  top: 28px;
   color: #38bdf8;
+  font-size: 15px;
 }
 
-.y-axis {
+.axis-y-arrow {
+  position: absolute;
+  left: 19px;
+  top: 62px;
   color: #22c55e;
+  font-size: 15px;
 }
 
-.angle-axis {
+.axis-theta {
+  position: absolute;
+  left: 34px;
+  top: 14px;
+
   color: #facc15;
+  font-size: 18px;
+}
+
+.axis-label-x {
+  position: absolute;
+  left: 58px;
+  top: 42px;
+  color: #38bdf8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.axis-label-y {
+  position: absolute;
+  left: 33px;
+  top: 62px;
+  color: #22c55e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.axis-label-theta {
+  position: absolute;
+  left: 50px;
+  top: 17px;
+
+  color: #facc15;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 
@@ -565,12 +622,17 @@
         <button id="clearConsoleBtn" onclick="clearConsole()">Clear Console</button>
         <button id="calculateAllBtn" class="calc-button" onclick="calculateAll()">Calculate All</button>
       </div>
-      <div class="axis-widget">
-        <div class="axis-title">Scene Axes</div>
-        <div class="axis-row x-axis">← +X</div>
-        <div class="axis-row y-axis">↓ +Y</div>
-        <div class="axis-row angle-axis">↻ +θ</div>
-      </div>
+     <div class="axis-widget">
+      <div class="axis-origin"></div>
+      <div class="axis-x-line"></div>
+      <div class="axis-y-line"></div>
+      <div class="axis-x-arrow">▶</div>
+      <div class="axis-y-arrow">▼</div>
+      <div class="axis-theta">⤸</div>
+      <div class="axis-label-x">+X</div>
+      <div class="axis-label-y">+Y</div>
+      <div class="axis-label-theta">+θ</div>
+    </div>
       <canvas id="scene"></canvas>
     </section>
     <div id="statusBar" class="status-bar">
