@@ -922,6 +922,7 @@
         this.color = color || vehicleColor(state.nextVehicleNum);
         this.length = 16;
         this.width = 6;
+        this.height = null;
         this.weight = null;
         this.wheelbase = null;
         this.weightRatioFront = null;
@@ -1924,33 +1925,19 @@ function drawArrow(x1, y1, x2, y2) {
     function renderVehicleInspector(vehicle) {
       return `
         <h3>Vehicle Properties</h3>
-        <div class="field">
-          <label>Vehicle Label</label>
-          <input data-target="vehicle" data-prop="label" value="${escapeHtml(vehicle.label)}" />
-        </div>
-        <div class="field">
-          <label>Color</label>
-          <input type="color" data-target="vehicle" data-prop="color" value="${vehicle.color}" />
+        <div class="row"> 
+          <div class="field">
+            <label>Vehicle Label</label>
+            <input data-target="vehicle" data-prop="label" value="${escapeHtml(vehicle.label)}" />
+          </div>
+          <div class="field">
+            <label>Diagram Color</label>
+            <input type="color" data-target="vehicle" data-prop="color" value="${vehicle.color}" />
+          </div>
         </div>
         <div class="field">
           <label>Weight W (lbs)</label>
           <input type="number" step="1" data-target="vehicle" data-prop="weight" value="${vehicle.weight}" />
-        </div>
-        
-        <div class="row">
-          <div class="field">
-            <label>Length (ft)</label>
-            <input type="number" step="0.1" data-target="vehicle" data-prop="length" value="${vehicle.length}" />
-          </div>
-          <div class="field">
-            <label>Width (ft)</label>
-            <input type="number" step="0.1" data-target="vehicle" data-prop="width" value="${vehicle.width}" />
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Wheelbase Lwb (ft)</label>
-          <input type="number" step="1" data-target="vehicle" data-prop="wheelbase" value="${vehicle.wheelbase}" />
         </div>
         <div class="field">
             <label>Weight Ratio W/R</label>
@@ -1963,6 +1950,29 @@ function drawArrow(x1, y1, x2, y2) {
           <div class="field">
             <label>Rear (%)</label>
             <input type="number" step="0.1" data-target="vehicle" data-prop="weightRatioRear" value="${vehicle.weightRatioRear}" readonly />
+          </div>
+        </div>
+        <div class="field">
+            <label>Vehicle Dimensions</label>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Length (ft)</label>
+            <input type="number" step="0.1" data-target="vehicle" data-prop="length" value="${vehicle.length}" />
+          </div>
+          <div class="field">
+            <label>Width (ft)</label>
+            <input type="number" step="0.1" data-target="vehicle" data-prop="width" value="${vehicle.width}" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Height (ft)</label>
+            <input type="number" step="1" data-target="vehicle" data-prop="height" value="${vehicle.height}" />
+          </div>
+          <div class="field">
+            <label>Wheelbase Lwb (ft)</label>
+            <input type="number" step="1" data-target="vehicle" data-prop="wheelbase" value="${vehicle.wheelbase}" />
           </div>
         </div>
         <div class="field">
