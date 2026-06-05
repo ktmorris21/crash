@@ -2625,7 +2625,7 @@ canvas.addEventListener('pointerdown', event => {
     state.events.push(new EventLink({ vehicleId: v1.id, fromStateId: v1.states[0].id, toStateId: v1s2.id, eventType: 'skidToStop', label: 'Skid Event' }));
 
     selectEvent(state.events[0].id); */
-    log('Load complete. Click "Add Vehicle" to get started.');
+    log(`Load complete. Click "Add Vehicle" to get started. Specify at a minimum the vehicle total weight and weight ratio to enable calculations.`);
     //log('Try selecting Skid Event or Yaw Event; the inspector fields change by event type.');
     //log('Use window.crashScene in DevTools for experiments/export.');
   </script>
