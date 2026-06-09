@@ -711,6 +711,54 @@
     // This keeps the Inspector generic while letting each event type
     // define its own fields and calculation placeholders.
     const eventTypeRegistry = {
+      skidContinuedMotion: {
+        label: 'Skid - Continued Motion',
+        defaultInputs() {
+          return {
+            dragFactor: 0.70,
+            gradePercent: 0,
+            brakingEfficiency: 1.00,
+            skidDistanceFt: null,
+            useStateDistance: true,
+            dragFactorMode: 'dynamic',
+            endingSpeed: 0
+          };
+        },
+        renderFields(event) {
+          ensureEventInputs(event);
+          return `
+            <h4>Skid - Continued Motion Inputs</h4>
+
+            <div class="field">
+              <label>Static/Dynamic Drag Factor</label>
+              <select data-target="event-input" data-prop="dragFactorMode">
+                <option value="static"
+                  ${event.inputs.dragFactorMode === 'static' ? 'selected' : ''}>
+                  Use Static Drag Factor
+                </option>
+                <option value="dynamic"
+                  ${event.inputs.dragFactorMode === 'dynamic' ? 'selected' : ''}>
+                  Attempt Dynamic Drag Factor
+                </option>
+              </select>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>Roadway Drag Factor</label>
+                <input type="number" step="0.01" data-target="event-input" data-prop="dragFactor" value="${valueOrBlank(event.inputs.dragFactor)}" />
+              </div>
+              <div class="field">
+                <label>Grade (%)</label>
+                <input type="number" step="0.1" data-target="event-input" data-prop="gradePercent" value="${valueOrBlank(event.inputs.gradePercent)}" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Calculate & Apply Speed to Upstream State</label>
+            </div>
+            <button class="calc-button" id="skidStopCalculateBtn" onclick="calculateSkid()">Calculate</button>
+          `;
+        }
+      },
       skidToStop: {
         label: 'Skid to Stop',
         defaultInputs() {
@@ -772,70 +820,22 @@
           `;
         }
       },
-      skidContinuedMotion: {
-        label: 'Skid - Continued Motion',
-        defaultInputs() {
-          return {
-            dragFactor: 0.70,
-            gradePercent: 0,
-            brakingEfficiency: 1.00,
-            skidDistanceFt: null,
-            useStateDistance: true,
-            dragFactorMode: 'dynamic',
-            endingSpeed: 0
-          };
-        },
-        renderFields(event) {
-          ensureEventInputs(event);
-          return `
-            <h4>Skid to Stop Inputs</h4>
-
-            <div class="field">
-              <label>Static/Dynamic Drag Factor</label>
-              <select data-target="event-input" data-prop="dragFactorMode">
-                <option value="static"
-                  ${event.inputs.dragFactorMode === 'static' ? 'selected' : ''}>
-                  Use Static Drag Factor
-                </option>
-                <option value="dynamic"
-                  ${event.inputs.dragFactorMode === 'dynamic' ? 'selected' : ''}>
-                  Attempt Dynamic Drag Factor
-                </option>
-              </select>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label>Roadway Drag Factor</label>
-                <input type="number" step="0.01" data-target="event-input" data-prop="dragFactor" value="${valueOrBlank(event.inputs.dragFactor)}" />
-              </div>
-              <div class="field">
-                <label>Grade (%)</label>
-                <input type="number" step="0.1" data-target="event-input" data-prop="gradePercent" value="${valueOrBlank(event.inputs.gradePercent)}" />
-              </div>
-            </div>
-            <div class="field">
-              <label>Calculate & Apply Skid-to-Stop to Upstream/Downstream States</label>
-            </div>
-            <button class="calc-button" id="skidStopCalculateBtn" onclick="calculateSkid()">Calculate</button>
-          `;
-        }
-      },
-
       yaw: {
         label: 'Yaw',
         defaultInputs() {
           return {
+            chordLength: null,
+            middleOrd: null,
             radiusFt: 150,
             dragFactor: 0.75,
             superelevationPercent: 0,
-            useMeasuredRadius: true,
             yawDirection: 'cw'
           };
         },
         renderFields(event) {
           ensureEventInputs(event);
           return `
-            <h4>Yaw Inputs</h4>
+            <h4>Yaw - Critical Speed Inputs</h4>
 
             <div class="field">
               <label>Yaw Direction</label>
@@ -853,22 +853,35 @@
                 </option>
               </select>
             </div>
-           
             <div class="row">
               <div class="field">
-                <label>Radius, ft</label>
-                <input type="number" step="0.1" data-target="event-input" data-prop="radiusFt" value="${valueOrBlank(event.inputs.radiusFt)}" />
+                <label>Roadway Drag Factor</label>
+                <input type="number" step="0.01" data-target="event-input" data-prop="dragFactor" value="${valueOrBlank(event.inputs.dragFactor)}" />
               </div>
               <div class="field">
-                <label>Drag / side friction</label>
-                <input type="number" step="0.01" data-target="event-input" data-prop="dragFactor" value="${valueOrBlank(event.inputs.dragFactor)}" />
+                <label>Superelevation, %</label>
+                <input type="number" step="0.1" data-target="event-input" data-prop="superelevationPercent" value="${valueOrBlank(event.inputs.superelevationPercent)}" />
               </div>
             </div>
             <div class="field">
-              <label>Superelevation, %</label>
-              <input type="number" step="0.1" data-target="event-input" data-prop="superelevationPercent" value="${valueOrBlank(event.inputs.superelevationPercent)}" />
+              <label>Yaw Mark Dimensions</labels>
             </div>
-            ${renderCalculatedOutputs(event)}
+            <div class="row">
+              <div class="field">
+                <label>Chord Length C (ft)</label>
+                <input type="number" step="0.1" data-target="event-input" data-prop="chordLength" value="${valueOrBlank(event.inputs.chordLength)}" />
+              </div>
+              <div class="field">
+                <label>Middle Ordinate m (ft)</label>
+                <input type="number" step="0.01" data-target="event-input" data-prop="middleOrd" value="${valueOrBlank(event.inputs.middleOrd)}" />
+              </div>
+            </div>
+
+            <div class="field">
+                <label class="calc-capable">Radius r (ft)</label>
+                <input type="number" step="0.1" data-target="event-input" data-prop="radiusFt" value="${valueOrBlank(event.inputs.radiusFt)}" />
+            </div>          
+
           `;
         }
 
@@ -2444,7 +2457,7 @@ function drawArrow(x1, y1, x2, y2) {
         vehicleId: vehicle.id,
         fromStateId: selected.id,
         toStateId: target.id,
-        eventType: 'skidToStop'
+        eventType: 'skidContinuedMotion'
       });
       state.events.push(event);
       selectEvent(event.id);
@@ -2464,8 +2477,8 @@ function drawArrow(x1, y1, x2, y2) {
         );
       }
       let to = vehicle.states[vehicle.states.indexOf(from) + 1];
-      if (!to) to = addState(vehicle.id, { x: from.x + 30, y: from.y, speedMph: 0 });
-      const event = new EventLink({ vehicleId: vehicle.id, fromStateId: from.id, toStateId: to.id, eventType: 'skidToStop' });
+      if (!to) to = addState(vehicle.id, { x: from.x + 50, y: from.y, speedMph: 0 });
+      const event = new EventLink({ vehicleId: vehicle.id, fromStateId: from.id, toStateId: to.id, eventType: 'skidContinuedMotion' });
       state.events.push(event);
       selectEvent(event.id);
       log(`Added ${event.label}.`);
