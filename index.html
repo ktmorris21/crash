@@ -803,13 +803,6 @@
                 </option>
               </select>
             </div>
-
-            <!--
-            <div class="field">
-              <label>Manual skid distance, ft</label>
-              <input type="number" step="0.1" data-target="event-input" data-prop="skidDistanceFt" value="${valueOrBlank(event.inputs.skidDistanceFt)}" />
-            </div>
-            -->
             <div class="row">
               <div class="field">
                 <label>Roadway Drag Factor</label>
@@ -820,13 +813,6 @@
                 <input type="number" step="0.1" data-target="event-input" data-prop="gradePercent" value="${valueOrBlank(event.inputs.gradePercent)}" />
               </div>
             </div>
-            <!--
-            <div class="field">
-              <label>Braking efficiency</label>
-              <input type="number" step="0.01" data-target="event-input" data-prop="brakingEfficiency" value="${valueOrBlank(event.inputs.brakingEfficiency)}" />
-            </div>
-            ${renderCalculatedOutputs(event)}
-            -->
             <div class="field">
               <label>Calculate & Apply Skid-to-Stop to Upstream/Downstream States</label>
             </div>
@@ -842,21 +828,32 @@
             radiusFt: 150,
             dragFactor: 0.75,
             superelevationPercent: 0,
-            useMeasuredRadius: true
+            useMeasuredRadius: true,
+            yawDirection: 'cw'
           };
         },
         renderFields(event) {
           ensureEventInputs(event);
           return `
             <h4>Yaw Inputs</h4>
-            <div class="card">Yaw events often need radius and side-friction/drag assumptions. Calculation here is only a placeholder hook.</div>
+
             <div class="field">
-              <label>Use measured/manual radius</label>
-              <select data-target="event-input" data-prop="useMeasuredRadius" data-type="boolean">
-                <option value="true" ${event.inputs.useMeasuredRadius ? 'selected' : ''}>Yes</option>
-                <option value="false" ${!event.inputs.useMeasuredRadius ? 'selected' : ''}>No / TBD</option>
+              <label>Yaw Direction</label>
+              <select
+                data-target="event-input"
+                data-prop="yawDirection"
+                data-type="string">
+                <option value="cw"
+                  ${event.inputs.yawDirection === 'cw' ? 'selected' : ''}>
+                  Clockwise
+                </option>
+                <option value="ccw"
+                  ${event.inputs.yawDirection === 'ccw' ? 'selected' : ''}>
+                  Counterclockwise
+                </option>
               </select>
             </div>
+           
             <div class="row">
               <div class="field">
                 <label>Radius, ft</label>
@@ -1644,7 +1641,7 @@ function drawGrid(width, height) {
 
       // Choose which side of the chord the yaw center is on
       // Use 1 or -1. Flip this if the arc draws on the wrong side.
-      const side = Number(e.inputs.yawArcSide || 1);
+      const side = e.inputs.yawDirection === 'ccw' ? -1 : 1;
 
       const center = {
         x: mid.x + nx * h * side,
