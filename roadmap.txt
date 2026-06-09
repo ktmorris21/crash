@@ -1,11 +1,27 @@
 Wishlist:
+Event direction flip (so you're not stuck if you get into a sequence and missed or need to change something)
 Welcome dialog
 CVS vehicle import
 Export/import program state "save/load"
-Collisions
+Draggable console size
+Yaw events
+Collision events
 Kinetic energy
-Scroll console size
-No events in chain allowed after a skid to stop
+Case comparison
+Monte Carlo / sensitivity analysis
+Photo import and grid overlay
+Crush (screening level / quick and dirty)
+Forward simulation
+Geospatial data imports??
 
 Done:
 +x, +y, +angle orgin/legend/symbol
+No events in chain allowed after a skid to stop
+
+
+collision brainstorm:
+- make a collision event, must specify two vehicles
+- you manually place the vehicle states
+- get a calculation error if the vehicle states are not touching. Get AI to develop an alg to check if the vehicles are touching
+based on width/length and CoG positions
+- do we want a forward direction calculate (would be some physics sim) on collisions?
