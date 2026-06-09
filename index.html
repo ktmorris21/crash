@@ -607,7 +607,7 @@
   </div>
 
   <div class="header-version">
-    v0.1.02
+    v0.2.01 <!--0.2 will be yaw-->
   </div>
 </header>
 
@@ -833,7 +833,7 @@
             <button class="calc-button" id="skidStopCalculateBtn" onclick="calculateSkid()">Calculate</button>
           `;
         }
-      }/*,
+      },
 
       yaw: {
         label: 'Yaw',
@@ -873,24 +873,9 @@
             </div>
             ${renderCalculatedOutputs(event)}
           `;
-        },
-        calculate({ event }) {
-          ensureEventInputs(event);
-          const radiusFt = Number(event.inputs.radiusFt || 0);
-          const drag = Number(event.inputs.dragFactor || 0);
-          const superAsDrag = Number(event.inputs.superelevationPercent || 0) / 100;
-
-          // Placeholder formula shell. Replace with your verified reconstruction logic.
-          const speedMph = Math.sqrt(Math.max(0, 15 * radiusFt * (drag + superAsDrag)));
-
-          event.calculated = {
-            radiusFt: round(radiusFt, 2),
-            effectiveSideFriction: round(drag + superAsDrag, 3),
-            placeholderSpeedMph: round(speedMph, 1)
-          };
-          return event.calculated;
         }
-      }, */
+
+      }
       /*
       custom: {
         label: 'Custom / Notes Only',
@@ -1632,6 +1617,82 @@ function drawGrid(width, height) {
       state2 = findState(stateId2);
       return distanceBetweenStates(state1, state2);
     }
+
+    function drawYawRadiusArc(e, a, b, selected) {
+      const radiusFt = Number(e.inputs.yawRadiusFt || e.inputs.radiusFt || 0);
+      if (!radiusFt || radiusFt <= 0) return;
+
+      const r = radiusFt * state.camera.zoom;
+
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const d = Math.hypot(dx, dy);
+
+      // Cannot draw an arc of this radius through both points
+      if (d <= 0 || d > 2 * r) return;
+
+      const mid = {
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2
+      };
+
+      const h = Math.sqrt((r * r) - ((d / 2) * (d / 2)));
+
+      // Perpendicular unit vector
+      const nx = -dy / d;
+      const ny = dx / d;
+
+      // Choose which side of the chord the yaw center is on
+      // Use 1 or -1. Flip this if the arc draws on the wrong side.
+      const side = Number(e.inputs.yawArcSide || 1);
+
+      const center = {
+        x: mid.x + nx * h * side,
+        y: mid.y + ny * h * side
+      };
+
+      const startAngle = Math.atan2(a.y - center.y, a.x - center.x);
+      const endAngle = Math.atan2(b.y - center.y, b.x - center.x);
+
+      let delta = endAngle - startAngle;
+
+      // Force the shorter arc between the two states
+      while (delta > Math.PI) delta -= Math.PI * 2;
+      while (delta < -Math.PI) delta += Math.PI * 2;
+
+      ctx.save();
+      ctx.strokeStyle = selected ? '#facc15' : '#94a3b8';
+      ctx.lineWidth = selected ? 2 : 1.5;
+      ctx.globalAlpha = selected ? 0.55 : 0.35;
+      ctx.setLineDash([8, 8]);
+
+      ctx.beginPath();
+      ctx.arc(
+        center.x,
+        center.y,
+        r,
+        startAngle,
+        startAngle + delta,
+        delta < 0
+      );
+      ctx.stroke();
+
+      // Position label halfway along arc
+      const midAngle = startAngle + (delta / 2);
+
+      const labelX = center.x + Math.cos(midAngle) * (r + 12);
+      const labelY = center.y + Math.sin(midAngle) * (r + 12);
+
+      ctx.fillStyle = selected ? '#facc15' : '#94a3b8';
+      ctx.globalAlpha = selected ? 0.9 : 0.7;
+      ctx.font = '11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillText(`r = ${radiusFt.toFixed(0)} ft`, labelX, labelY);
+
+      ctx.restore();
+    }
     
     function drawEvents() {
       for (const e of state.events) {
@@ -1655,6 +1716,10 @@ function drawGrid(width, height) {
         ctx.fillStyle = selected ? selectedEventColor : normalEventColor;
         ctx.lineWidth = selected ? 4 : 2;
         ctx.globalAlpha = selected ? 1 : 0.9;
+
+        if (e.eventType === 'yaw') {
+          drawYawRadiusArc(e, a, b, selected);
+        }
 
         drawArrow(a.x, a.y, b.x, b.y);
 
